@@ -8,13 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # dependencies
 include(external_deps.cmake) #external deps
 
-
-
-
 # shared stuff
 add_subdirectory(shared_stuff)
 
-# tests TODO
+# tests
 add_subdirectory(tests)
 
 # experiments folder
