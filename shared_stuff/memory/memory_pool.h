@@ -10,20 +10,20 @@
 namespace st::memory
 {
 	//init and release
-	void MemoryPoolInit();
+	void MemoryPoolInit(bool preWarm = false);
 	void MemoryPoolRelease();
 
 	//allocate and deallocate
 	void* MemoryPoolAllocate(size_t size);
 
-	template<typename T> void* MemoryPoolAllocate()
+	template<typename T> T* MemoryPoolAllocate()
 	{
-		return MemoryPoolAllocate(sizeof(T));
+		return static_cast<T*>(MemoryPoolAllocate(sizeof(T)));
 	}
 
 	void MemoryPoolDeallocate(void* p, size_t size);
 
-	template<typename T> void* MemoryPoolDeallocate(void* p)
+	template<typename T> void MemoryPoolDeallocate(T* p)
 	{
 		MemoryPoolDeallocate(p, sizeof(T));
 	}

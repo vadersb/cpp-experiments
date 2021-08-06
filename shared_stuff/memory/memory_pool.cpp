@@ -28,6 +28,20 @@ namespace st::memory
 					2048,
 			};
 
+	constexpr int g_bucketItemsPerPage[g_bucketsCount] =
+			{
+				1024,
+				1024,
+				1024,
+				1024,
+				1024,
+				512,
+				256,
+				128,
+				64,
+				32,
+			};
+
 	MemoryPoolBucket* g_Buckets[g_bucketsCount] =
 			{
 					nullptr,
@@ -46,13 +60,13 @@ namespace st::memory
 	MemoryPoolBucket* GetMemoryPoolBucket(size_t size);
 
 
-	void MemoryPoolInit()
+	void MemoryPoolInit(bool preWarm)
 	{
 		assert(g_MemoryPoolReady == false);
 
 		//creating buckets
 		for (int i = 0; i < g_bucketsCount; i++) {
-			g_Buckets[i] = new MemoryPoolBucket(g_bucketSizes[i]);
+			g_Buckets[i] = new MemoryPoolBucket(g_bucketSizes[i], g_bucketItemsPerPage[i], preWarm);
 		}
 
 		g_MemoryPoolReady = true;
