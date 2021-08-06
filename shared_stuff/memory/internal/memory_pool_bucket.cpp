@@ -56,7 +56,11 @@ namespace st::memory
 	{
 		//todo check that the address is within pages
 
+		//todo check that the address is not already in m_Items
+
 		m_Items.push(p);
+
+		assert(GetFreeItemsCount() <= GetTotalItemsCount());
 	}
 
 

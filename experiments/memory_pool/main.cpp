@@ -3,6 +3,8 @@
 //
 
 #include <string>
+#include <iostream>
+#include <vector>
 #include "memory_pool.h"
 #include "memory_poolable.h"
 
@@ -16,6 +18,8 @@ public:
 	{
 
 	}
+
+	virtual ~TestItem() = default;
 
 	[[nodiscard]] int GetIntValue() const {return m_IntValue;}
 	[[nodiscard]] float GetFloatValue() const {return m_FloatValue;}
@@ -47,11 +51,48 @@ private:
 };
 
 
-//todo test a derived class that reverts to standard malloc/free
+
 //THE idea is to replace regular pooling with class specific optimized pooling
+class CustomTestItem : public AdvancedTestItem
+{
+public:
+
+	CustomTestItem() : AdvancedTestItem(123, 456.789f, "default string value"),
+	m_AnotherFloatValue(1.0f)
+	{
+		std::cout << "CustomTestItem constructor" << std::endl;
+	}
+
+	~CustomTestItem() override
+	{
+		m_AnotherFloatValue = 0.0f;
+		std::cout << "CustomTestItem destructor" << std::endl;
+	}
+
+	[[nodiscard]] float GetAnotherFloatValue() const {return m_AnotherFloatValue;}
+
+	static void* operator new(std::size_t size)
+	{
+		return std::malloc(size);
+	}
+
+	static void operator delete(void* p, std::size_t size)
+	{
+		std::free(p);
+	}
+
+
+private:
+
+	float m_AnotherFloatValue;
+
+};
+
+
 
 void SimpleTests();
 void PoolableItemTests();
+void MassiveNumberOfItemsTests();
 
 int main()
 {
@@ -61,6 +102,7 @@ int main()
 	//doing the tests
 	SimpleTests();
 	PoolableItemTests();
+	MassiveNumberOfItemsTests();
 
 	//cleanup
 	st::memory::MemoryPoolRelease();
@@ -102,4 +144,32 @@ void PoolableItemTests()
 	stringValue += "ok ok ";
 
 	delete pAdvancedItem;
+
+	//item with custom new/delete
+	TestItem* pCustomItem = new CustomTestItem();
+
+	float anotherFloatValue = pCustomItem->GetFloatValue();
+
+	delete pCustomItem;
+}
+
+void MassiveNumberOfItemsTests()
+{
+	const int MassiveNumber = 30000;
+
+	std::vector<TestItem*> items;
+
+	for (int i = 0; i < MassiveNumber; i++)
+	{
+		auto pItem = new AdvancedTestItem(i, (float)i * 2, "some string");
+		items.push_back(pItem);
+	}
+
+	for (int i = 0; i < MassiveNumber; i++)
+	{
+		delete items[i];
+		items[i] = nullptr;
+	}
+
+
 }
