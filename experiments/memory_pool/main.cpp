@@ -7,6 +7,8 @@
 #include <vector>
 #include "memory_pool.h"
 #include "memory_poolable.h"
+#include "memory_reference_counted.h"
+#include "memory_rcptr.h"
 
 class TestItem : public st::memory::Poolable
 {
@@ -29,6 +31,7 @@ private:
 	int m_IntValue;
 	float m_FloatValue;
 };
+
 
 
 class AdvancedTestItem : public TestItem
@@ -89,10 +92,77 @@ private:
 };
 
 
+class RefCountedTestItem : public TestItem, public st::memory::ReferenceCounted
+{
+public:
+
+	RefCountedTestItem(int intValue, float floatValue) :
+			TestItem(intValue, floatValue),
+			st::memory::ReferenceCounted(),
+			m_DoubleIntValue(intValue * 2)
+	{
+
+	}
+
+	[[nodiscard]] int GetDoubleIntValue() const
+	{
+		return m_DoubleIntValue;
+	}
+
+private:
+
+	int m_DoubleIntValue;
+
+};
+
+
+class DerivedRefCountedItem : public RefCountedTestItem
+{
+public:
+
+	DerivedRefCountedItem(int intValue, float floatValue) :
+			RefCountedTestItem(intValue, floatValue),
+			m_DoubleFloatValue(floatValue * 2.0f)
+	{
+
+	}
+
+	[[nodiscard]] float GetDoubleFloatValue() const
+	{
+		return m_DoubleFloatValue;
+	}
+
+private:
+
+	float m_DoubleFloatValue;
+};
+
+class DoubleDerivedRefCountedItem : public DerivedRefCountedItem
+{
+public:
+
+	DoubleDerivedRefCountedItem(int intValue, float floatValue) :
+			DerivedRefCountedItem(intValue, floatValue),
+			m_TripleIntValue(intValue * 3)
+	{
+
+	}
+
+	[[nodiscard]] int GetTripleIntValue() const
+	{
+		return m_TripleIntValue;
+	}
+
+private:
+
+	int m_TripleIntValue;
+};
+
 
 void SimpleTests();
 void PoolableItemTests();
 void MassiveNumberOfItemsTests();
+void RefCountedTests();
 
 int main()
 {
@@ -103,6 +173,7 @@ int main()
 	SimpleTests();
 	PoolableItemTests();
 	MassiveNumberOfItemsTests();
+	RefCountedTests();
 
 	//cleanup
 	st::memory::MemoryPoolRelease();
@@ -155,6 +226,8 @@ void PoolableItemTests()
 
 void MassiveNumberOfItemsTests()
 {
+	std::cout << "Massive number of items tests started... " << std::endl;
+
 	const int MassiveNumber = 30000;
 
 	std::vector<TestItem*> items;
@@ -171,5 +244,61 @@ void MassiveNumberOfItemsTests()
 		items[i] = nullptr;
 	}
 
+	std::cout << "DONE. " << std::endl;
 
+}
+
+void RefCountedTests()
+{
+	//st::memory::rcptr<RefCountedTestItem> ptr(st::memory::CreateRefCountedPointer<DerivedRefCountedItem>(123, 456.789f));
+
+	auto ptr = st::memory::CreateRefCountedPointer<RefCountedTestItem, DerivedRefCountedItem>(123, 456.789f);
+
+	st::memory::rcptr<RefCountedTestItem> basePtr;
+
+	basePtr = ptr;
+
+	assert(ptr.ContainsValidPointer() == true);
+	assert(basePtr.ContainsValidPointer() == true);
+
+	float doubleFloatValue = basePtr.ptr<DerivedRefCountedItem>()->GetDoubleFloatValue();
+
+	std::cout << "double float value: " << doubleFloatValue << std::endl;
+
+	int doubleIntValue = basePtr.ptr()->GetDoubleIntValue();
+
+	std::cout << "double int value: " << doubleIntValue << std::endl;
+
+	//-----------
+	st::memory::rcptr<DerivedRefCountedItem> thirdPtr;
+
+	assert(thirdPtr.ContainsValidPointer() == false);
+
+	thirdPtr = basePtr;
+
+	assert(thirdPtr.ContainsValidPointer() == true);
+
+	doubleFloatValue = thirdPtr.ptr()->GetDoubleFloatValue();
+
+	std::cout << "again double float value: " << doubleFloatValue << std::endl;
+
+	basePtr = thirdPtr;
+
+
+	//invalid cast test
+	//[[maybe_unused]]
+	//int tripleIntValue = thirdPtr.ptr<DoubleDerivedRefCountedItem>()->GetTripleIntValue();
+
+
+	//---------
+
+	basePtr.Reset();
+
+	assert(basePtr.ContainsValidPointer() == false);
+	assert(ptr.ContainsValidPointer() == true);
+
+	std::cout << "size of pointer object: " << sizeof(basePtr) << std::endl;
+
+	//test pointer for non ref counted class
+	//st::memory::rcptr<TestItem> testPtr;
 }
