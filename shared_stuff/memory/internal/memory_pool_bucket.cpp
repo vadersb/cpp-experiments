@@ -45,8 +45,8 @@ namespace st::memory
 
 		assert(m_Items.empty() == false);
 
-		auto pResult = m_Items.top();
-		m_Items.pop();
+		auto pResult = m_Items.back();
+		m_Items.pop_back();
 
 		return pResult;
 	}
@@ -54,11 +54,18 @@ namespace st::memory
 
 	void MemoryPoolBucket::Deallocate(void* p)
 	{
-		//todo check that the address is within pages
+		//check that the address is within pages
+#ifdef DEBUG
+		assert(CheckIfAddressIsWithinPages(p) == true);
+#endif
 
-		//todo check that the address is not already in m_Items
+		//check that the address is not already in m_Items
+#ifdef DEBUG
+		auto searchResult = std::find(std::begin(m_Items), std::end(m_Items), p);
+		assert(searchResult == std::end(m_Items));
+#endif
 
-		m_Items.push(p);
+		m_Items.push_back(p);
 
 		assert(GetFreeItemsCount() <= GetTotalItemsCount());
 	}
@@ -72,7 +79,7 @@ namespace st::memory
 		for (int i = 0; i < m_ItemsPerPage; i++)
 		{
 			auto pItem = static_cast<char*>(pNewPage) + i * m_ItemSize;
-			m_Items.push(pItem);
+			m_Items.push_back(pItem);
 		}
 
 		//adding page to pages
@@ -80,15 +87,29 @@ namespace st::memory
 	}
 
 
-	int MemoryPoolBucket::GetTotalItemsCount()
+	int MemoryPoolBucket::GetTotalItemsCount() const
 	{
 		return (int)m_Pages.size() * m_ItemsPerPage;
 	}
 
 
-	int MemoryPoolBucket::GetFreeItemsCount()
+	int MemoryPoolBucket::GetFreeItemsCount() const
 	{
 		return (int)m_Items.size();
+	}
+
+
+	bool MemoryPoolBucket::CheckIfAddressIsWithinPages(void* p) const
+	{
+		for(auto pPage : m_Pages)
+		{
+			if (p >= pPage && p < static_cast<char*>(pPage) + m_SizePerPage)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 }

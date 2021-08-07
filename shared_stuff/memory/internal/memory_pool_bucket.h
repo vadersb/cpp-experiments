@@ -21,12 +21,14 @@ namespace st::memory
 		void* Allocate();
 		void Deallocate(void* p);
 
-		int GetTotalItemsCount();
-		int GetFreeItemsCount();
+		[[nodiscard]] int GetTotalItemsCount() const;
+		[[nodiscard]] int GetFreeItemsCount() const;
 
 	private:
 
 		void AddPage();
+
+		bool CheckIfAddressIsWithinPages (void* p) const;
 
 
 		int m_ItemSize;
@@ -34,7 +36,7 @@ namespace st::memory
 		int m_SizePerPage;
 
 		std::vector<void*> m_Pages;
-		std::stack<void*> m_Items;
+		std::vector<void*> m_Items;
 	};
 }
 
