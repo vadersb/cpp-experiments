@@ -308,14 +308,50 @@ void RefCountedTests()
 	//st::memory::rcptr<TestItem> testPtr;
 }
 
+void PrintString(const std::string& stringToPrint);
+void PrintString(std::string_view stringToPrint);
+//template<typename TChar, typename TAllocator> void PrintString(std::basic_string<TChar, std::char_traits<TChar>, TAllocator> stringToPrint);
+
 void AllocatorTests()
 {
 	std::vector<int, st::memory::Allocator<int>> testVector;
+
+	testVector.reserve(64);
 
 	for (int i = 0; i < 32; i++)
 	{
 		testVector.push_back(i);
 	}
 
+	std::basic_string<char, std::char_traits<char>, st::memory::Allocator<char>> testString;
+
+	testString = "ok!";
+	testString = "some long string!";
+
+	std::cout << "string: " << testString << std::endl;
+
+	testString = "final string value";
+
+	PrintString(testString);
+
+	std::string stdTestString = "std string";
+
+	PrintString(stdTestString);
 
 }
+
+
+void PrintString(const std::string& stringToPrint)
+{
+	std::cout << "string: " << stringToPrint << std::endl;
+}
+
+void PrintString(const std::string_view stringToPrint)
+{
+	std::cout << "string (view): " << stringToPrint << std::endl;
+}
+
+//template<typename TChar, typename TAllocator> void PrintString(const std::basic_string<TChar, std::char_traits<TChar>, TAllocator> stringToPrint)
+//{
+//	std::cout << "string: " << stringToPrint << std::endl;
+//}
