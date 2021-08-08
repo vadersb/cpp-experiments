@@ -11,6 +11,7 @@
 #include "memory_poolable.h"
 #include "memory_reference_counted.h"
 #include "memory_rcptr.h"
+#include "memory_allocator.h"
 
 class TestItem : public st::memory::Poolable
 {
@@ -165,6 +166,7 @@ void SimpleTests();
 void PoolableItemTests();
 void MassiveNumberOfItemsTests();
 void RefCountedTests();
+void AllocatorTests();
 
 int main()
 {
@@ -176,6 +178,7 @@ int main()
 	PoolableItemTests();
 	MassiveNumberOfItemsTests();
 	RefCountedTests();
+	AllocatorTests();
 
 	//cleanup
 	st::memory::MemoryPoolRelease();
@@ -303,4 +306,16 @@ void RefCountedTests()
 
 	//test pointer for non ref counted class
 	//st::memory::rcptr<TestItem> testPtr;
+}
+
+void AllocatorTests()
+{
+	std::vector<int, st::memory::Allocator<int>> testVector;
+
+	for (int i = 0; i < 32; i++)
+	{
+		testVector.push_back(i);
+	}
+
+
 }
