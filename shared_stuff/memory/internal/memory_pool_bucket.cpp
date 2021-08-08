@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "memory_pool_bucket.h"
+#include <cassert>
 
 namespace st::memory
 {

@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <cassert>
+
 #include "memory_pool.h"
 #include "memory_poolable.h"
 #include "memory_reference_counted.h"
