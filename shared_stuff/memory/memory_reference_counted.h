@@ -12,6 +12,7 @@ namespace st::memory
 	{
 
 	template <typename T> friend class rcptr;
+	template <typename T> friend class wptr;
 
 	public:
 
@@ -21,11 +22,21 @@ namespace st::memory
 
 		virtual ~ReferenceCounted() = default;
 
+		virtual void OnNoReferenceCountingOwnersLeft() {};
+
 	private:
 
+		[[nodiscard]] int GetReferenceCount() const {return m_ReferenceCount;}
+		[[nodiscard]] int GetWeakReferenceCount() const {return m_WeakReferenceCount;}
+
+		void ReferenceCountStart();
 		void ReferenceCountIncrease();
 		void ReferenceCountDecrease();
 
+		void WeakReferenceCountIncrease();
+		void WeakReferenceCountDecrease();
+
 		int32_t m_ReferenceCount;
+		int32_t m_WeakReferenceCount;
 	};
 }

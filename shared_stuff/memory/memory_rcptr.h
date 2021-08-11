@@ -24,7 +24,7 @@ namespace st::memory
 
 		explicit rcptr(T* p) : m_Pointer(p)
 		{
-			IncreaseRefCount();
+			StartRefCount();
 		}
 
 		template<typename U> explicit rcptr(U* ptr)
@@ -33,7 +33,7 @@ namespace st::memory
 
 			m_Pointer = CheckedDynamicCastFrom(ptr);
 
-			IncreaseRefCount();
+			StartRefCount();
 		}
 
 		//COPY CONSTRUCTORS
@@ -99,7 +99,7 @@ namespace st::memory
 
 			m_Pointer = ptr;
 
-			IncreaseRefCount();
+			StartRefCount();
 
 			return *this;
 		}
@@ -131,7 +131,7 @@ namespace st::memory
 
 			m_Pointer = CheckedDynamicCastFrom(ptr);
 
-			IncreaseRefCount();
+			StartRefCount();
 
 			return *this;
 		}
@@ -159,7 +159,7 @@ namespace st::memory
 			return *this;
 		}
 
-		template<typename U> rcptr& operator=(rcptr<U>&& ptrToMoveFrom) noexcept
+		template<typename U> rcptr& operator=(rcptr<U>&& ptrToMoveFrom)
 		{
 			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
 
@@ -184,13 +184,11 @@ namespace st::memory
 		}
 
 		//CONVERSION
-		template<typename U> explicit operator rcptr<U>()
+		template<typename U> explicit operator rcptr<U>() const
 		{
 			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
 
-			U* ptr = CheckedDynamicCastTo<U>(m_Pointer);
-
-			return rcptr<U>(ptr);
+			return rcptr<U>(*this);
 		}
 
 		//RESET
@@ -200,19 +198,13 @@ namespace st::memory
 		}
 
 		//POINTER ACCESS
-		T* ptr()
+		T* Ptr() const noexcept
 		{
 			assert(m_Pointer != nullptr);
 			return m_Pointer;
 		}
 
-		const T* ptr() const
-		{
-			assert(m_Pointer != nullptr);
-			return m_Pointer;
-		}
-
-		template<typename U> U* ptr()
+		template<typename U> U* Ptr() const
 		{
 			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
 			U* pResult = CheckedDynamicCastTo<U>(m_Pointer);
@@ -227,6 +219,14 @@ namespace st::memory
 		}
 
 	private:
+
+		inline void StartRefCount()
+		{
+			if (m_Pointer != nullptr)
+			{
+				m_Pointer->ReferenceCountStart();
+			}
+		}
 
 		inline void IncreaseRefCount()
 		{
@@ -245,7 +245,7 @@ namespace st::memory
 			}
 		}
 
-		template<typename U> inline T* CheckedDynamicCastFrom(U* ptr)
+		template<typename U> static inline T* CheckedDynamicCastFrom(U* ptr)
 		{
 			if (ptr == nullptr)
 			{
@@ -259,7 +259,7 @@ namespace st::memory
 			return pResult;
 		}
 
-		template<typename U> inline U* CheckedDynamicCastTo(T* ptr)
+		template<typename U> static inline U* CheckedDynamicCastTo(T* ptr)
 		{
 			if (ptr == nullptr)
 			{

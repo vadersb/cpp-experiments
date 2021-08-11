@@ -224,6 +224,7 @@ void PoolableItemTests()
 	//item with custom new/delete
 	TestItem* pCustomItem = new CustomTestItem();
 
+	[[maybe_unused]]
 	float anotherFloatValue = pCustomItem->GetFloatValue();
 
 	delete pCustomItem;
@@ -255,7 +256,7 @@ void MassiveNumberOfItemsTests()
 
 void RefCountedTests()
 {
-	//st::memory::rcptr<RefCountedTestItem> ptr(st::memory::CreateRefCountedPointer<DerivedRefCountedItem>(123, 456.789f));
+	//st::memory::rcptr<RefCountedTestItem> Ptr(st::memory::CreateRefCountedPointer<DerivedRefCountedItem>(123, 456.789f));
 
 	auto ptr = st::memory::CreateRefCountedPointer<RefCountedTestItem, DerivedRefCountedItem>(123, 456.789f);
 
@@ -266,11 +267,11 @@ void RefCountedTests()
 	assert(ptr.ContainsValidPointer() == true);
 	assert(basePtr.ContainsValidPointer() == true);
 
-	float doubleFloatValue = basePtr.ptr<DerivedRefCountedItem>()->GetDoubleFloatValue();
+	float doubleFloatValue = basePtr.Ptr<DerivedRefCountedItem>()->GetDoubleFloatValue();
 
 	std::cout << "double float value: " << doubleFloatValue << std::endl;
 
-	int doubleIntValue = basePtr.ptr()->GetDoubleIntValue();
+	int doubleIntValue = basePtr.Ptr()->GetDoubleIntValue();
 
 	std::cout << "double int value: " << doubleIntValue << std::endl;
 
@@ -283,7 +284,7 @@ void RefCountedTests()
 
 	assert(thirdPtr.ContainsValidPointer() == true);
 
-	doubleFloatValue = thirdPtr.ptr()->GetDoubleFloatValue();
+	doubleFloatValue = thirdPtr.Ptr()->GetDoubleFloatValue();
 
 	std::cout << "again double float value: " << doubleFloatValue << std::endl;
 
@@ -292,7 +293,7 @@ void RefCountedTests()
 
 	//invalid cast test
 	//[[maybe_unused]]
-	//int tripleIntValue = thirdPtr.ptr<DoubleDerivedRefCountedItem>()->GetTripleIntValue();
+	//int tripleIntValue = thirdPtr.Ptr<DoubleDerivedRefCountedItem>()->GetTripleIntValue();
 
 
 	//---------
