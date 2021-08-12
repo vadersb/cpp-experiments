@@ -26,8 +26,9 @@ namespace st::memory
 
 	private:
 
-		[[nodiscard]] int GetReferenceCount() const {return m_ReferenceCount;}
-		[[nodiscard]] int GetWeakReferenceCount() const {return m_WeakReferenceCount;}
+		[[nodiscard]] inline int GetReferenceCount() const {return m_ReferenceCount;}
+		[[nodiscard]] inline int GetWeakReferenceCount() const {return m_WeakReferenceCount;}
+		[[nodiscard]] inline bool IsOutOfScope() const {return m_ReferenceCount == 0;}
 
 		void ReferenceCountStart();
 		void ReferenceCountIncrease();

@@ -11,6 +11,7 @@
 #include "memory_poolable.h"
 #include "memory_reference_counted.h"
 #include "memory_rcptr.h"
+#include "memory_wptr.h"
 #include "memory_allocator.h"
 
 class TestItem : public st::memory::Poolable

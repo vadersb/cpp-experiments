@@ -13,10 +13,11 @@ namespace st::memory
 	public:
 
 		template<typename U> friend class rcptr;
+		template<typename U> friend class wptr;
 
 		static_assert(std::is_base_of_v<ReferenceCounted, T>);
 
-		//CONSTRUCTOR
+		//CONSTRUCTORS
 		rcptr() : m_Pointer(nullptr)
 		{
 
@@ -37,6 +38,8 @@ namespace st::memory
 		}
 
 		//COPY CONSTRUCTORS
+
+		//rcptr
 		rcptr(const rcptr& anotherPointer) : m_Pointer(anotherPointer.m_Pointer)
 		{
 			IncreaseRefCount();
@@ -51,7 +54,12 @@ namespace st::memory
 			IncreaseRefCount();
 		}
 
+		//wptr
+		//todo
+
 		//MOVE CONSTRUCTORS
+
+		//rcptr
 		rcptr(rcptr&& pointerToMoveFrom)  noexcept : m_Pointer(pointerToMoveFrom.m_Pointer)
 		{
 			pointerToMoveFrom.m_Pointer = nullptr;
@@ -66,14 +74,12 @@ namespace st::memory
 			pointerToMoveFrom.m_Pointer = nullptr;
 		}
 
+		//wptr
+
 		//DESTRUCTOR
 		~rcptr()
 		{
-			if (m_Pointer != nullptr)
-			{
-				m_Pointer->ReferenceCountDecrease();
-				m_Pointer = nullptr;
-			}
+			DecreaseRefCountAndReset();
 		}
 
 		//COPY ASSIGNMENT
