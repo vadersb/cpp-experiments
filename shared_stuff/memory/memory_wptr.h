@@ -5,7 +5,8 @@
 #pragma once
 
 #include "memory_reference_counted.h"
-
+#include "memory_rcptr.h"
+#include "utils_cast.h"
 
 namespace st::memory
 {
@@ -42,9 +43,7 @@ namespace st::memory
 
 		template<typename U> explicit wptr(U* ptr)
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
-			m_Pointer = CheckedDynamicCastFrom(ptr);
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
 
 			if (m_Pointer != nullptr)
 			{
@@ -61,7 +60,31 @@ namespace st::memory
 		//COPY CONSTRUCTORS
 
 		//wptr
-		//todo
+		wptr(const wptr& pointerToCopyFrom)
+		{
+			if (pointerToCopyFrom.m_Pointer == nullptr || pointerToCopyFrom.m_Pointer->IsOutOfScope())
+			{
+				m_Pointer = nullptr;
+			}
+			else
+			{
+				m_Pointer = pointerToCopyFrom.m_Pointer;
+				IncreaseRefCount();
+			}
+		}
+
+		template<typename U> explicit wptr(const wptr<U>& pointerToCopyFrom)
+		{
+			if (pointerToCopyFrom.m_Pointer == nullptr || pointerToCopyFrom.m_Pointer->IsOutOfScope())
+			{
+				m_Pointer = nullptr;
+			}
+			else
+			{
+				m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(pointerToCopyFrom.m_Pointer);
+				IncreaseRefCount();
+			}
+		}
 
 		//rcptr
 		explicit wptr(const rcptr<T>& strongPointer) : m_Pointer(strongPointer.m_Pointer)
@@ -70,11 +93,9 @@ namespace st::memory
 		}
 
 
-		template<typename U> explicit wptr(const rcptr<U&> strongPointer)
+		template<typename U> explicit wptr(const rcptr<U>& strongPointer)
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
-			m_Pointer = CheckedDynamicCastFrom(strongPointer.m_Pointer);
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(strongPointer.m_Pointer);
 
 			IncreaseRefCount();
 		}
@@ -96,39 +117,109 @@ namespace st::memory
 			DecreaseRefCountAndReset();
 		}
 
+		//COPY ASSIGNMENT
+
+
+		//MOVE ASSIGNMENT
+
+
+		//REFRESH
+		//returns true if contains valid pointer
+		bool Refresh()
+		{
+			ResetIfExpired();
+			return ContainsValidPointer();
+		}
+
+		//RESET
+		void Reset()
+		{
+			DecreaseRefCountAndReset();
+		}
+
+		//SWAP
+		void Swap(wptr& pointerToSwapWith)
+		{
+			ResetIfExpired();
+			pointerToSwapWith.ResetIfExpired();
+			std::swap(m_Pointer, pointerToSwapWith.m_Pointer);
+		}
+
+		//LOCK
+		[[nodiscard]] rcptr<T> Lock() const noexcept
+		{
+			if (ContainsValidPointer())
+			{
+				return rcptr<T>(*this);
+			}
+			else
+			{
+				return rcptr<T>();
+			}
+		}
+
+		template<typename U> rcptr<U> Lock() const noexcept
+		{
+			if (ContainsValidPointer())
+			{
+				return rcptr<U>(*this);
+			}
+			else
+			{
+				return rcptr<U>();
+			}
+		}
+
+
+		//QUERIES
+		[[nodiscard]] bool ContainsValidPointer() const
+		{
+			if (m_Pointer == nullptr)
+			{
+				return false;
+			}
+			else
+			{
+				return !m_Pointer->IsOutOfScope();
+			}
+		}
+
+		explicit operator bool() const noexcept
+		{
+			return ContainsValidPointer();
+		}
+
+		[[nodiscard]] int GetUseCount() const
+		{
+			if (m_Pointer != nullptr)
+			{
+				return m_Pointer->GetReferenceCount();
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		[[nodiscard]] bool IsExpired() const
+		{
+			return GetUseCount() == 0;
+		}
 
 	private:
 
 
-		template<typename U> static inline T* CheckedDynamicCastFrom(U* ptr)
+		inline void ResetIfExpired()
 		{
-			if (ptr == nullptr)
+			if (m_Pointer != nullptr)
 			{
-				return nullptr;
+				if (m_Pointer->IsOutOfScope())
+				{
+					m_Pointer->WeakReferenceCountDecrease();
+					m_Pointer = nullptr;
+				}
 			}
-
-			T* pResult = dynamic_cast<T*>(ptr);
-
-			assert(pResult != nullptr);
-
-			return pResult;
 		}
-
-		template<typename U> static inline U* CheckedDynamicCastTo(T* ptr)
-		{
-			if (ptr == nullptr)
-			{
-				return nullptr;
-			}
-
-			U* pResult = dynamic_cast<U*>(ptr);
-
-			assert(pResult != nullptr);
-
-			return pResult;
-		}
-
-
 
 		inline void IncreaseRefCount()
 		{

@@ -5,6 +5,9 @@
 #pragma once
 
 #include "memory_reference_counted.h"
+#include "memory_wptr.h"
+#include "utils_cast.h"
+
 
 namespace st::memory
 {
@@ -30,9 +33,7 @@ namespace st::memory
 
 		template<typename U> explicit rcptr(U* ptr)
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
-			m_Pointer = CheckedDynamicCastFrom(ptr);
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
 
 			StartRefCount();
 		}
@@ -47,15 +48,41 @@ namespace st::memory
 
 		template<typename U> explicit rcptr(const rcptr<U>& anotherPointer)
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
-			m_Pointer = CheckedDynamicCastFrom(anotherPointer.m_Pointer);
+			m_Pointer = st::utils::CheckedDynamicCastUpDown(anotherPointer.m_Pointer);
 
 			IncreaseRefCount();
 		}
 
 		//wptr
-		//todo
+		explicit rcptr(const wptr<T>& weakPointer)
+		{
+			if (weakPointer.m_Pointer == nullptr || weakPointer.m_Pointer->IsOutOfScope())
+			{
+				m_Pointer = nullptr;
+			}
+			else
+			{
+				m_Pointer = weakPointer.m_Pointer;
+			}
+
+			IncreaseRefCount();
+		}
+
+
+		template<typename U> explicit rcptr(const wptr<U>& weakPointer)
+		{
+			if (weakPointer.m_Pointer == nullptr || weakPointer.m_Pointer->IsOutOfScope())
+			{
+				m_Pointer = nullptr;
+			}
+			else
+			{
+				m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(weakPointer.m_Pointer);
+			}
+
+			IncreaseRefCount();
+		}
+
 
 		//MOVE CONSTRUCTORS
 
@@ -67,14 +94,56 @@ namespace st::memory
 
 		template<typename U> explicit rcptr(rcptr<U>&& pointerToMoveFrom)
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
-			m_Pointer = CheckedDynamicCastFrom(pointerToMoveFrom.m_Pointer);
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(pointerToMoveFrom.m_Pointer);
 
 			pointerToMoveFrom.m_Pointer = nullptr;
 		}
 
 		//wptr
+		explicit rcptr(wptr<T>& weakPointerToMoveFrom) noexcept
+		{
+			if (weakPointerToMoveFrom.m_Pointer == nullptr)
+			{
+				m_Pointer = nullptr;
+			}
+			else
+			{
+				if (weakPointerToMoveFrom.m_Pointer->IsOutOfScope())
+				{
+					m_Pointer = nullptr;
+				}
+				else
+				{
+					m_Pointer = weakPointerToMoveFrom.m_Pointer;
+					IncreaseRefCount();
+
+				}
+
+				weakPointerToMoveFrom.DecreaseRefCountAndReset();
+			}
+		}
+
+		template<typename U> explicit rcptr(wptr<U>&& weakPointerToMoveFrom)
+		{
+			if (weakPointerToMoveFrom.m_Pointer == nullptr)
+			{
+				m_Pointer = nullptr;
+			}
+			else
+			{
+				if (weakPointerToMoveFrom.m_Pointer->IsOutOfScope())
+				{
+					m_Pointer = nullptr;
+				}
+				else
+				{
+					m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(weakPointerToMoveFrom.m_Pointer);
+					IncreaseRefCount();
+				}
+
+				weakPointerToMoveFrom.DecreaseRefCountAndReset();
+			}
+		}
 
 		//DESTRUCTOR
 		~rcptr()
@@ -112,14 +181,12 @@ namespace st::memory
 
 		template<typename U> rcptr<T>& operator=(const rcptr<U>& otherRCPtr)
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
 			if (this == (rcptr<T>*)&otherRCPtr) return *this;
 			if (m_Pointer == otherRCPtr.m_Pointer) return *this;
 
 			DecreaseRefCountAndReset();
 
-			m_Pointer = CheckedDynamicCastFrom(otherRCPtr.m_Pointer);
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(otherRCPtr.m_Pointer);
 
 			IncreaseRefCount();
 
@@ -129,13 +196,11 @@ namespace st::memory
 
 		template<typename U> rcptr& operator=(const U* ptr)
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
 			if (m_Pointer == (T*)ptr) return *this;
 
 			DecreaseRefCountAndReset();
 
-			m_Pointer = CheckedDynamicCastFrom(ptr);
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
 
 			StartRefCount();
 
@@ -167,8 +232,6 @@ namespace st::memory
 
 		template<typename U> rcptr& operator=(rcptr<U>&& ptrToMoveFrom)
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
 			if (this == *ptrToMoveFrom)
 			{
 				DecreaseRefCountAndReset();
@@ -183,7 +246,7 @@ namespace st::memory
 
 			DecreaseRefCountAndReset();
 
-			m_Pointer = CheckedDynamicCastFrom(ptrToMoveFrom.m_Pointer);
+			m_Pointer = st::utils::CheckedDynamicCastUpDown(ptrToMoveFrom.m_Pointer);
 			ptrToMoveFrom.m_Pointer = nullptr;
 
 			return *this;
@@ -192,10 +255,9 @@ namespace st::memory
 		//CONVERSION
 		template<typename U> explicit operator rcptr<U>() const
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-
 			return rcptr<U>(*this);
 		}
+
 
 		//RESET
 		void Reset()
@@ -203,7 +265,19 @@ namespace st::memory
 			DecreaseRefCountAndReset();
 		}
 
+		//SWAP
+		void Swap(rcptr& pointerToSwapWith)
+		{
+			std::swap(m_Pointer, pointerToSwapWith.m_Pointer);
+		}
+
 		//POINTER ACCESS
+		T* operator ->() const noexcept
+		{
+			assert(m_Pointer != nullptr);
+			return m_Pointer;
+		}
+
 		T* Ptr() const noexcept
 		{
 			assert(m_Pointer != nullptr);
@@ -212,8 +286,7 @@ namespace st::memory
 
 		template<typename U> U* Ptr() const
 		{
-			static_assert(std::is_convertible_v<T, U> || std::is_convertible_v<U, T>);
-			U* pResult = CheckedDynamicCastTo<U>(m_Pointer);
+			U* pResult = st::utils::CheckedDynamicCastUpDown<T, U>(m_Pointer);
 			assert(pResult != nullptr);
 			return pResult;
 		}
@@ -222,6 +295,23 @@ namespace st::memory
 		[[nodiscard]] bool ContainsValidPointer() const
 		{
 			return m_Pointer != nullptr;
+		}
+
+		explicit operator bool() const noexcept
+		{
+			return m_Pointer != nullptr;
+		}
+
+		[[nodiscard]] int GetUseCount() const
+		{
+			if (m_Pointer != nullptr)
+			{
+				return m_Pointer->GetReferenceCount();
+			}
+			else
+			{
+				return 0;
+			}
 		}
 
 	private:
@@ -251,33 +341,6 @@ namespace st::memory
 			}
 		}
 
-		template<typename U> static inline T* CheckedDynamicCastFrom(U* ptr)
-		{
-			if (ptr == nullptr)
-			{
-				return nullptr;
-			}
-
-			T* pResult = dynamic_cast<T*>(ptr);
-
-			assert(pResult != nullptr);
-
-			return pResult;
-		}
-
-		template<typename U> static inline U* CheckedDynamicCastTo(T* ptr)
-		{
-			if (ptr == nullptr)
-			{
-				return nullptr;
-			}
-
-			U* pResult = dynamic_cast<U*>(ptr);
-
-			assert(pResult != nullptr);
-
-			return pResult;
-		}
 
 		T* m_Pointer;
 	};

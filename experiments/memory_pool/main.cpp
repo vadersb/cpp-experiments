@@ -272,7 +272,7 @@ void RefCountedTests()
 
 	std::cout << "double float value: " << doubleFloatValue << std::endl;
 
-	int doubleIntValue = basePtr.Ptr()->GetDoubleIntValue();
+	int doubleIntValue = basePtr->GetDoubleIntValue();
 
 	std::cout << "double int value: " << doubleIntValue << std::endl;
 
@@ -285,11 +285,26 @@ void RefCountedTests()
 
 	assert(thirdPtr.ContainsValidPointer() == true);
 
-	doubleFloatValue = thirdPtr.Ptr()->GetDoubleFloatValue();
+	doubleFloatValue = thirdPtr->GetDoubleFloatValue();
+
 
 	std::cout << "again double float value: " << doubleFloatValue << std::endl;
 
 	basePtr = thirdPtr;
+
+	//--------
+	//weak ptr
+
+	st::memory::wptr<DerivedRefCountedItem> weakPtr(thirdPtr);
+
+	assert(weakPtr.ContainsValidPointer() == true);
+
+	std::cout <<"use count from weak pointer: " << weakPtr.GetUseCount() << std::endl;
+
+	//lock
+	auto lockedPointer = weakPtr.Lock<RefCountedTestItem>();
+
+	std::cout <<"use count after lock: " << weakPtr.GetUseCount() << std::endl;
 
 
 	//invalid cast test
