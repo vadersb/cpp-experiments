@@ -1,2 +1,2 @@
-add_executable(tests tests_main.cpp)
+add_executable(tests tests_main.cpp tests_refcount_pointers.cpp)
 target_link_libraries(tests shared_stuff)

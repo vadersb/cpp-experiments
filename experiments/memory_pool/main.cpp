@@ -257,7 +257,7 @@ void MassiveNumberOfItemsTests()
 
 void RefCountedTests()
 {
-	//st::memory::rcptr<RefCountedTestItem> Ptr(st::memory::CreateRefCountedPointer<DerivedRefCountedItem>(123, 456.789f));
+	//st::memory::rcptr<RefCountedTestItem> Get(st::memory::CreateRefCountedPointer<DerivedRefCountedItem>(123, 456.789f));
 
 	auto ptr = st::memory::CreateRefCountedPointer<RefCountedTestItem, DerivedRefCountedItem>(123, 456.789f);
 
@@ -268,7 +268,7 @@ void RefCountedTests()
 	assert(ptr.ContainsValidPointer() == true);
 	assert(basePtr.ContainsValidPointer() == true);
 
-	float doubleFloatValue = basePtr.Ptr<DerivedRefCountedItem>()->GetDoubleFloatValue();
+	float doubleFloatValue = basePtr.Get<DerivedRefCountedItem>()->GetDoubleFloatValue();
 
 	std::cout << "double float value: " << doubleFloatValue << std::endl;
 
@@ -301,6 +301,27 @@ void RefCountedTests()
 
 	std::cout <<"use count from weak pointer: " << weakPtr.GetUseCount() << std::endl;
 
+	//copy
+	auto anotherWeekPtr(weakPtr);
+
+	std::cout <<"use count from copied weak pointer: " << anotherWeekPtr.GetUseCount() << std::endl;
+
+	anotherWeekPtr.Reset();
+
+	//base copy
+	st::memory::wptr<RefCountedTestItem> baseWeakPtr(anotherWeekPtr);
+
+	baseWeakPtr.Refresh();
+
+	//refresh
+	weakPtr.Refresh();
+
+	if (weakPtr.IsExpired())
+	{
+		std::cout << "weak ptr is expired!" << std::endl;
+	}
+
+
 	//lock
 	auto lockedPointer = weakPtr.Lock<RefCountedTestItem>();
 
@@ -309,7 +330,7 @@ void RefCountedTests()
 
 	//invalid cast test
 	//[[maybe_unused]]
-	//int tripleIntValue = thirdPtr.Ptr<DoubleDerivedRefCountedItem>()->GetTripleIntValue();
+	//int tripleIntValue = thirdPtr.Get<DoubleDerivedRefCountedItem>()->GetTripleIntValue();
 
 
 	//---------

@@ -78,9 +78,10 @@ namespace st::memory
 		assert(g_MemoryPoolReady == true);
 
 		//destroying buckets
-		for (int i = 0; i < g_bucketsCount; i++) {
-			delete g_Buckets[i];
-			g_Buckets[i] = nullptr;
+		for (auto& g_Bucket : g_Buckets)
+		{
+			delete g_Bucket;
+			g_Bucket = nullptr;
 		}
 
 		g_MemoryPoolReady = false;

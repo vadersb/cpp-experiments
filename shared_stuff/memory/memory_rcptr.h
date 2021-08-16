@@ -11,6 +11,9 @@
 
 namespace st::memory
 {
+	template<typename T> class rcptr;
+	template<typename T> class wptr;
+
 	template<typename T> class rcptr
 	{
 	public:
@@ -99,51 +102,6 @@ namespace st::memory
 			pointerToMoveFrom.m_Pointer = nullptr;
 		}
 
-		//wptr
-		explicit rcptr(wptr<T>& weakPointerToMoveFrom) noexcept
-		{
-			if (weakPointerToMoveFrom.m_Pointer == nullptr)
-			{
-				m_Pointer = nullptr;
-			}
-			else
-			{
-				if (weakPointerToMoveFrom.m_Pointer->IsOutOfScope())
-				{
-					m_Pointer = nullptr;
-				}
-				else
-				{
-					m_Pointer = weakPointerToMoveFrom.m_Pointer;
-					IncreaseRefCount();
-
-				}
-
-				weakPointerToMoveFrom.DecreaseRefCountAndReset();
-			}
-		}
-
-		template<typename U> explicit rcptr(wptr<U>&& weakPointerToMoveFrom)
-		{
-			if (weakPointerToMoveFrom.m_Pointer == nullptr)
-			{
-				m_Pointer = nullptr;
-			}
-			else
-			{
-				if (weakPointerToMoveFrom.m_Pointer->IsOutOfScope())
-				{
-					m_Pointer = nullptr;
-				}
-				else
-				{
-					m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(weakPointerToMoveFrom.m_Pointer);
-					IncreaseRefCount();
-				}
-
-				weakPointerToMoveFrom.DecreaseRefCountAndReset();
-			}
-		}
 
 		//DESTRUCTOR
 		~rcptr()
@@ -158,26 +116,12 @@ namespace st::memory
 			if (m_Pointer == otherRCPtr.m_Pointer) return *this;
 
 			DecreaseRefCountAndReset();
-
 			m_Pointer = otherRCPtr.m_Pointer;
-
 			IncreaseRefCount();
 
 			return *this;
 		}
 
-		rcptr& operator=(const T* ptr)
-		{
-			if (m_Pointer == ptr) return *this;
-
-			DecreaseRefCountAndReset();
-
-			m_Pointer = ptr;
-
-			StartRefCount();
-
-			return *this;
-		}
 
 		template<typename U> rcptr<T>& operator=(const rcptr<U>& otherRCPtr)
 		{
@@ -185,27 +129,12 @@ namespace st::memory
 			if (m_Pointer == otherRCPtr.m_Pointer) return *this;
 
 			DecreaseRefCountAndReset();
-
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(otherRCPtr.m_Pointer);
-
 			IncreaseRefCount();
 
 			return *this;
 		}
 
-
-		template<typename U> rcptr& operator=(const U* ptr)
-		{
-			if (m_Pointer == (T*)ptr) return *this;
-
-			DecreaseRefCountAndReset();
-
-			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
-
-			StartRefCount();
-
-			return *this;
-		}
 
 		//MOVE ASSIGNMENT
 		rcptr& operator=(rcptr&& ptrToMoveFrom) noexcept
@@ -272,19 +201,25 @@ namespace st::memory
 		}
 
 		//POINTER ACCESS
-		T* operator ->() const noexcept
+		inline T* operator ->() const noexcept
 		{
 			assert(m_Pointer != nullptr);
 			return m_Pointer;
 		}
 
-		T* Ptr() const noexcept
+		inline T& operator *() const noexcept
+		{
+			assert(m_Pointer != nullptr);
+			return *m_Pointer;
+		}
+
+		inline T* Get() const noexcept
 		{
 			assert(m_Pointer != nullptr);
 			return m_Pointer;
 		}
 
-		template<typename U> U* Ptr() const
+		template<typename U> U* Get() const
 		{
 			U* pResult = st::utils::CheckedDynamicCastUpDown<T, U>(m_Pointer);
 			assert(pResult != nullptr);

@@ -4,12 +4,15 @@
 
 #pragma once
 
-#include "memory_reference_counted.h"
 #include "memory_rcptr.h"
+#include "memory_reference_counted.h"
 #include "utils_cast.h"
 
 namespace st::memory
 {
+	template<typename T> class rcptr;
+	template<typename T> class wptr;
+
 	template<typename T> class wptr
 	{
 	public:
@@ -28,33 +31,7 @@ namespace st::memory
 		}
 
 		//naked pointers
-		explicit wptr(T* p) : m_Pointer(p)
-		{
-			if (m_Pointer != nullptr)
-			{
-				if (m_Pointer->IsOutOfScope())
-				{
-					m_Pointer = nullptr;
-				}
-			}
-
-			IncreaseRefCount();
-		}
-
-		template<typename U> explicit wptr(U* ptr)
-		{
-			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
-
-			if (m_Pointer != nullptr)
-			{
-				if (m_Pointer->IsOutOfScope())
-				{
-					m_Pointer = nullptr;
-				}
-			}
-
-			IncreaseRefCount();
-		}
+		//considered unnecessary
 
 
 		//COPY CONSTRUCTORS
@@ -104,11 +81,17 @@ namespace st::memory
 		//MOVE CONSTRUCTORS
 
 		//wptr
-		//todo
+		wptr(wptr&& pointerToMoveFrom) noexcept : m_Pointer(pointerToMoveFrom.m_Pointer)
+		{
+			pointerToMoveFrom.m_Pointer = nullptr;
+		}
 
+		template<typename U> explicit wptr(wptr<U>&& pointerToMoveFrom) noexcept
+		{
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(pointerToMoveFrom.m_Pointer);
+			pointerToMoveFrom.m_Pointer = nullptr;
+		}
 
-		//rcptr
-		//todo
 
 
 		//DESTRUCTOR
@@ -119,8 +102,99 @@ namespace st::memory
 
 		//COPY ASSIGNMENT
 
+		//wptr
+		wptr& operator=(const wptr& otherPtr)
+		{
+			if (this == &otherPtr) return *this;
+			if (m_Pointer == otherPtr.m_Pointer) return *this;
+
+			DecreaseRefCountAndReset();
+			m_Pointer = otherPtr.m_Pointer;
+			IncreaseRefCount();
+
+			return *this;
+		}
+
+		template<typename U> wptr<T>& operator=(const wptr<U>& otherPtr)
+		{
+			if (this == &otherPtr) return *this;
+			if (m_Pointer == otherPtr.m_Pointer) return *this;
+
+			DecreaseRefCountAndReset();
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(otherPtr.m_Pointer);
+			IncreaseRefCount();
+
+			return *this;
+		}
+
+		//rcptr
+		wptr& operator=(const rcptr<T>& strongPointer)
+		{
+			if (m_Pointer == strongPointer.m_Pointer) return *this;
+
+			DecreaseRefCountAndReset();
+			m_Pointer = strongPointer.m_Pointer;
+			IncreaseRefCount();
+
+			return *this;
+		}
+
+		template<typename U> wptr& operator=(const rcptr<U>& strongPointer)
+		{
+			if (m_Pointer == strongPointer.m_Pointer) return *this;
+
+			DecreaseRefCountAndReset();
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(strongPointer.m_Pointer);
+			IncreaseRefCount();
+
+			return *this;
+		}
+
 
 		//MOVE ASSIGNMENT
+		wptr& operator=(wptr&& pointerToMoveFrom) noexcept
+ 		{
+			if (this == &pointerToMoveFrom)
+			{
+				DecreaseRefCountAndReset();
+				return *this;
+			}
+
+			if (m_Pointer == pointerToMoveFrom.m_Pointer)
+			{
+				pointerToMoveFrom.DecreaseRefCountAndReset();
+				return *this;
+			}
+
+			DecreaseRefCountAndReset();
+
+			m_Pointer = pointerToMoveFrom.m_Pointer;
+			pointerToMoveFrom.m_Pointer = nullptr;
+
+			return *this;
+		}
+
+		template<typename U> wptr& operator=(wptr<U>&& pointerToMoveFrom) noexcept
+		{
+			if (this == *pointerToMoveFrom)
+			{
+				DecreaseRefCountAndReset();
+				return *this;
+			}
+
+			if (m_Pointer == pointerToMoveFrom.m_Pointer)
+			{
+				pointerToMoveFrom.DecreaseRefCountAndReset();
+				return *this;
+			}
+
+			DecreaseRefCountAndReset();
+
+			m_Pointer = st::utils::CheckedDynamicCastUpDown(pointerToMoveFrom.m_Pointer);
+			pointerToMoveFrom.m_Pointer = nullptr;
+
+			return *this;
+		}
 
 
 		//REFRESH
@@ -194,6 +268,18 @@ namespace st::memory
 			if (m_Pointer != nullptr)
 			{
 				return m_Pointer->GetReferenceCount();
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		[[nodiscard]] int GetWeakReferenceCount() const
+		{
+			if (m_Pointer != nullptr)
+			{
+				return m_Pointer->GetWeakReferenceCount();
 			}
 			else
 			{
