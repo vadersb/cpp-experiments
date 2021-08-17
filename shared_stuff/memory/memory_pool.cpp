@@ -65,7 +65,8 @@ namespace st::memory
 		assert(g_MemoryPoolReady == false);
 
 		//creating buckets
-		for (int i = 0; i < g_bucketsCount; i++) {
+		for (int i = 0; i < g_bucketsCount; i++)
+		{
 			g_Buckets[i] = new MemoryPoolBucket(g_bucketSizes[i], g_bucketItemsPerPage[i], preWarm);
 		}
 
