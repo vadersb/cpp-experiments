@@ -76,6 +76,7 @@ public:
 		std::cout << "CustomTestItem destructor" << std::endl;
 	}
 
+	[[maybe_unused]]
 	[[nodiscard]] float GetAnotherFloatValue() const {return m_AnotherFloatValue;}
 
 	static void* operator new(std::size_t size)
@@ -83,7 +84,7 @@ public:
 		return std::malloc(size);
 	}
 
-	static void operator delete(void* p, std::size_t size)
+	static void operator delete(void* p, [[maybe_unused]] std::size_t size)
 	{
 		std::free(p);
 	}
@@ -141,11 +142,12 @@ private:
 	float m_DoubleFloatValue;
 };
 
-class DoubleDerivedRefCountedItem : public DerivedRefCountedItem
+
+class [[maybe_unused]] DoubleDerivedRefCountedItem : public DerivedRefCountedItem
 {
 public:
 
-	DoubleDerivedRefCountedItem(int intValue, float floatValue) :
+	[[maybe_unused]] DoubleDerivedRefCountedItem(int intValue, float floatValue) :
 			DerivedRefCountedItem(intValue, floatValue),
 			m_TripleIntValue(intValue * 3)
 	{
@@ -205,22 +207,20 @@ void SimpleTests()
 void PoolableItemTests()
 {
 	//base item
-	auto pItem = new TestItem(123, 456.789f);
+	auto pItem = std::make_unique<TestItem>(123, 456.789f);
 
 	int intValue = pItem->GetIntValue();
 	intValue += 234;
 	float floatValue = pItem->GetFloatValue();
 	floatValue += 1.2f;
 
-	delete pItem;
 
 	//derived item
-	auto pAdvancedItem = new AdvancedTestItem(intValue, floatValue, "some string!");
+	auto pAdvancedItem = std::make_unique<AdvancedTestItem>(intValue, floatValue, "some string!");
 
 	std::string stringValue = pAdvancedItem->GetStringValue();
 	stringValue += "ok ok ";
 
-	delete pAdvancedItem;
 
 	//item with custom new/delete
 	TestItem* pCustomItem = new CustomTestItem();
@@ -364,6 +364,9 @@ void AllocatorTests()
 	std::basic_string<char, std::char_traits<char>, st::memory::Allocator<char>> testString;
 
 	testString = "ok!";
+
+	std::cout << "short string: " << testString << std::endl;
+
 	testString = "some long string!";
 
 	std::cout << "string: " << testString << std::endl;
