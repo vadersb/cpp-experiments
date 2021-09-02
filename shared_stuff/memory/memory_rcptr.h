@@ -280,16 +280,16 @@ namespace st::memory
 		T* m_Pointer;
 	};
 
-	template<typename T, typename ... Args> rcptr<T> CreateRefCountedPointer(Args&& ... args)
+	template<typename TObjectType, typename ... Args> rcptr<TObjectType> CreateRefCountedPointer(Args&& ... args)
 	{
-		T* p = new T(std::forward<Args>(args)...);
-		return rcptr<T>(p);
+		TObjectType* p = new TObjectType(std::forward<Args>(args)...);
+		return rcptr<TObjectType>(p);
 	}
 
-	template<typename T, typename U, typename ... Args> rcptr<T> CreateRefCountedPointer(Args&& ... args)
+	template<typename TPointerType, typename TObjectType, typename ... Args> rcptr<TPointerType> CreateRefCountedPointer(Args&& ... args)
 	{
-		static_assert(std::is_convertible_v<U, T>);
-		U* p = new U(std::forward<Args>(args)...);
-		return rcptr<T>(p);
+		static_assert(std::is_convertible_v<TObjectType, TPointerType>);
+		TObjectType* p = new TObjectType(std::forward<Args>(args)...);
+		return rcptr<TPointerType>(p);
 	}
 }

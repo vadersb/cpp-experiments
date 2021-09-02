@@ -325,8 +325,13 @@ void RefCountedTests()
 	//lock
 	auto lockedPointer = weakPtr.Lock<RefCountedTestItem>();
 
-	std::cout <<"use count after lock: " << weakPtr.GetUseCount() << std::endl;
+	std::cout << "use count after lock: " << weakPtr.GetUseCount() << std::endl;
 
+	std::cout << "use count from locked pointer: " << lockedPointer.GetUseCount() << std::endl;
+
+	lockedPointer.Reset();
+
+	std::cout << "use count after locked pointer reset: " << weakPtr.GetUseCount() << std::endl;
 
 	//invalid cast test
 	//[[maybe_unused]]
