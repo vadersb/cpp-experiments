@@ -9,3 +9,7 @@ target_link_libraries(raylib_hello_world PRIVATE shared_stuff raylib)
 #memory_pool
 add_executable(memory_pool memory_pool/main.cpp)
 target_link_libraries(memory_pool shared_stuff)
+
+#delegate
+add_executable(delegate delegate/main.cpp)
+target_link_libraries(delegate shared_stuff)

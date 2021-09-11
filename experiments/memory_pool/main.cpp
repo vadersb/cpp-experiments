@@ -366,7 +366,9 @@ void AllocatorTests()
 		testVector.push_back(i);
 	}
 
-	std::basic_string<char, std::char_traits<char>, st::memory::Allocator<char>> testString;
+	using stringWithAlloc = std::basic_string<char, std::char_traits<char>, st::memory::Allocator<char>>;
+
+	stringWithAlloc testString;
 
 	testString = "ok!";
 
@@ -380,10 +382,13 @@ void AllocatorTests()
 
 	PrintString(testString);
 
-	std::string stdTestString = "std string";
+	std::string stdTestString(testString);
+	stdTestString += " and some more...";
 
 	PrintString(stdTestString);
 
+	std::cout << "and btw, size of string object: " << sizeof(std::string) << std::endl;
+	std::cout << "and size of string with custom allocator: " << sizeof(stringWithAlloc) <<std::endl;
 }
 
 

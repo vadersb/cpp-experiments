@@ -14,7 +14,7 @@ namespace st::memory
 	template<typename T> class rcptr;
 	template<typename T> class wptr;
 
-	template<typename T> class rcptr
+	template<typename T> class rcptr final
 	{
 	public:
 
