@@ -11,6 +11,9 @@ namespace st::memory
 	class ReferenceCounted
 	{
 
+	//-----=====Info on the derived classes=====-----
+	// * make their constructors private + make CreateRefCountedPointer() template function a friend
+
 	template <typename T> friend class rcptr;
 	template <typename T> friend class wptr;
 
@@ -30,7 +33,6 @@ namespace st::memory
 		[[nodiscard]] inline int GetWeakReferenceCount() const {return m_WeakReferenceCount;}
 		[[nodiscard]] inline bool IsOutOfScope() const {return m_ReferenceCount == 0;}
 
-		void ReferenceCountStart();
 		void ReferenceCountIncrease();
 		void ReferenceCountDecrease();
 

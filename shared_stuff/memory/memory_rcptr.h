@@ -18,8 +18,15 @@ namespace st::memory
 	{
 	public:
 
+		//FRIENDS
 		template<typename U> friend class rcptr;
 		template<typename U> friend class wptr;
+
+		template<typename TObjectType, typename ... Args> friend rcptr<TObjectType> CreateRefCountedPointer(Args&& ... args);
+		template<typename TPointerType, typename TObjectType, typename ... Args> friend rcptr<TPointerType> CreateRefCountedPointer(Args&& ... args);
+
+		template<typename TObjectType> rcptr<TObjectType> friend AddRefCountedPointer(TObjectType* pRefCountedObject);
+		template<typename TPointerType, typename TObjectType> friend rcptr<TPointerType> AddRefCountedPointer(TObjectType* pRefCountedObject);
 
 		static_assert(std::is_base_of_v<ReferenceCounted, T>);
 
@@ -29,17 +36,6 @@ namespace st::memory
 
 		}
 
-		explicit rcptr(T* p) : m_Pointer(p)
-		{
-			StartRefCount();
-		}
-
-		template<typename U> explicit rcptr(U* ptr)
-		{
-			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
-
-			StartRefCount();
-		}
 
 		//COPY CONSTRUCTORS
 
@@ -251,11 +247,36 @@ namespace st::memory
 
 	private:
 
-		inline void StartRefCount()
+		//CONSTRUCTORS
+		explicit rcptr(T* p, bool isJustCreated) : m_Pointer(p)
 		{
-			if (m_Pointer != nullptr)
+			if (isJustCreated == false)
 			{
-				m_Pointer->ReferenceCountStart();
+				IncreaseRefCount();
+			}
+			else
+			{
+				if (m_Pointer != nullptr)
+				{
+					assert(m_Pointer->GetReferenceCount() >= 1);
+				}
+			}
+		}
+
+		template<typename U> explicit rcptr(U* ptr, bool isJustCreated)
+		{
+			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
+
+			if (isJustCreated == false)
+			{
+				IncreaseRefCount();
+			}
+			else
+			{
+				if (m_Pointer != nullptr)
+				{
+					assert(m_Pointer->GetReferenceCount() >= 1);
+				}
 			}
 		}
 
@@ -280,16 +301,37 @@ namespace st::memory
 		T* m_Pointer;
 	};
 
+
 	template<typename TObjectType, typename ... Args> rcptr<TObjectType> CreateRefCountedPointer(Args&& ... args)
 	{
 		TObjectType* p = new TObjectType(std::forward<Args>(args)...);
-		return rcptr<TObjectType>(p);
+		return rcptr<TObjectType>(p, true);
 	}
+
 
 	template<typename TPointerType, typename TObjectType, typename ... Args> rcptr<TPointerType> CreateRefCountedPointer(Args&& ... args)
 	{
 		static_assert(std::is_convertible_v<TObjectType, TPointerType>);
 		TObjectType* p = new TObjectType(std::forward<Args>(args)...);
-		return rcptr<TPointerType>(p);
+		return rcptr<TPointerType>(p, true);
+	}
+
+
+	template<typename TObjectType> rcptr<TObjectType> AddRefCountedPointer(TObjectType* pRefCountedObject)
+	{
+		assert(pRefCountedObject != nullptr);
+		static_assert(std::is_base_of_v<ReferenceCounted, TObjectType>);
+
+		return rcptr<TObjectType>(pRefCountedObject, false);
+	}
+
+
+	template<typename TPointerType, typename TObjectType> rcptr<TPointerType> AddRefCountedPointer(TObjectType* pRefCountedObject)
+	{
+		assert(pRefCountedObject != nullptr);
+		static_assert(std::is_base_of_v<ReferenceCounted, TObjectType>);
+		static_assert(std::is_convertible_v<TObjectType, TPointerType>);
+
+		return rcptr<TPointerType>(pRefCountedObject, false);
 	}
 }

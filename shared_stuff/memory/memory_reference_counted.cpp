@@ -8,19 +8,10 @@
 namespace st::memory
 {
 	ReferenceCounted::ReferenceCounted() :
-	m_ReferenceCount(0),
+	m_ReferenceCount(1), //reference count is 1 because it may be changed in constructor of derived class and constructor will RefCountDecrease() which will lead to calling the destructor
 	m_WeakReferenceCount(0)
 	{
 
-	}
-
-
-	void ReferenceCounted::ReferenceCountStart()
-	{
-		assert(m_ReferenceCount == 0);
-		assert(m_WeakReferenceCount == 0);
-
-		m_ReferenceCount = 1;
 	}
 
 
@@ -42,7 +33,11 @@ namespace st::memory
 
 		if (m_ReferenceCount == 0)
 		{
+			m_WeakReferenceCount++; //to avoid calling 'delete this' twice if WeakReferenceCountDecrease() is called somewhere inside OnNoReferenceCountingOwnersLeft()
+
 			OnNoReferenceCountingOwnersLeft();
+
+			m_WeakReferenceCount--;
 
 			if (m_WeakReferenceCount == 0)
 			{

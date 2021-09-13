@@ -4,13 +4,20 @@
 
 #include "delegate.h"
 #include <iostream>
+#include <memory_pool.h>
+#include "delegate_types.h"
 
 int main()
 {
-	st::utils::Delegate<void, int, int> someDelegate;
+	//init
+	st::memory::MemoryPoolInit(true);
 
-	someDelegate.Call(1, 2);
+	DelegateTypesTest();
 
-	//std::cout << "return value: " << returnValue << std::endl;
 
+	//cleanup
+	st::memory::MemoryPoolRelease();
+
+	return 0;
 }
+
