@@ -25,8 +25,8 @@ namespace st::memory
 		template<typename TObjectType, typename ... Args> friend rcptr<TObjectType> CreateRefCountedPointer(Args&& ... args);
 		template<typename TPointerType, typename TObjectType, typename ... Args> friend rcptr<TPointerType> CreateRefCountedPointer(Args&& ... args);
 
-		template<typename TObjectType> rcptr<TObjectType> friend AddRefCountedPointer(TObjectType* pRefCountedObject);
-		template<typename TPointerType, typename TObjectType> friend rcptr<TPointerType> AddRefCountedPointer(TObjectType* pRefCountedObject);
+		template<typename TObjectType> rcptr<TObjectType> friend GetRefCountedPointer(TObjectType* pRefCountedObject);
+		template<typename TPointerType, typename TObjectType> friend rcptr<TPointerType> GetRefCountedPointer(TObjectType* pRefCountedObject);
 
 		static_assert(std::is_base_of_v<ReferenceCounted, T>);
 
@@ -189,6 +189,17 @@ namespace st::memory
 			return m_Pointer == ptrToCompareWith.m_Pointer;
 		}
 
+		template<typename U> bool operator==(const rcptr<U>& ptrToCompareWith) const
+		{
+			return m_Pointer == ptrToCompareWith.m_Pointer;
+		}
+
+		template<typename U> bool operator==(const wptr<U>& ptrToCompareWith) const
+		{
+			return m_Pointer == ptrToCompareWith.m_Pointer;
+		}
+
+
 		//RESET
 		void Reset()
 		{
@@ -322,7 +333,7 @@ namespace st::memory
 	}
 
 
-	template<typename TObjectType> rcptr<TObjectType> AddRefCountedPointer(TObjectType* pRefCountedObject)
+	template<typename TObjectType> rcptr<TObjectType> GetRefCountedPointer(TObjectType* pRefCountedObject)
 	{
 		assert(pRefCountedObject != nullptr);
 		static_assert(std::is_base_of_v<ReferenceCounted, TObjectType>);
@@ -331,7 +342,7 @@ namespace st::memory
 	}
 
 
-	template<typename TPointerType, typename TObjectType> rcptr<TPointerType> AddRefCountedPointer(TObjectType* pRefCountedObject)
+	template<typename TPointerType, typename TObjectType> rcptr<TPointerType> GetRefCountedPointer(TObjectType* pRefCountedObject)
 	{
 		assert(pRefCountedObject != nullptr);
 		static_assert(std::is_base_of_v<ReferenceCounted, TObjectType>);

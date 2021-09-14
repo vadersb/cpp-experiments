@@ -17,6 +17,12 @@ namespace st::memory
 
 		static void operator delete(void* p, std::size_t size);
 
+	protected:
+
+		//forces any derived classes to have virtual destructor
+		//it is required to receive correct *size* value in operator delete
+		virtual ~Poolable() = default;
+
 	private:
 
 	};

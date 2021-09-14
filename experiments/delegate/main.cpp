@@ -12,7 +12,7 @@ int main()
 	//init
 	st::memory::MemoryPoolInit(true);
 
-	//DelegateTypesTest();
+	DelegateTypesTest();
 	DelegatePoolableDebugTest();
 
 	//cleanup

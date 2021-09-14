@@ -5,7 +5,6 @@
 #pragma once
 
 #include "memory_rcptr.h"
-#include "memory_reference_counted.h"
 #include "utils_cast.h"
 
 namespace st::memory
@@ -246,6 +245,16 @@ namespace st::memory
 
 		//COMPARISON
 		bool operator==(const wptr& ptrToCompareWith) const
+		{
+			return m_Pointer == ptrToCompareWith.m_Pointer;
+		}
+
+		template<typename U> bool operator==(const wptr<U>& ptrToCompareWith) const
+		{
+			return m_Pointer == ptrToCompareWith.m_Pointer;
+		}
+
+		template<typename U> bool operator==(const rcptr<U>& ptrToCompareWith) const
 		{
 			return m_Pointer == ptrToCompareWith.m_Pointer;
 		}

@@ -311,6 +311,16 @@ void RefCountedTests()
 	//base copy
 	st::memory::wptr<RefCountedTestItem> baseWeakPtr(anotherWeekPtr);
 
+	//comparison test
+	if (anotherWeekPtr == baseWeakPtr)
+	{
+		std::cout << "weak ptrs are equal" << std::endl;
+	}
+	else
+	{
+		std::cout << "weak ptrs are not equal" << std::endl;
+	}
+
 	baseWeakPtr.Refresh();
 
 	//refresh
@@ -324,6 +334,11 @@ void RefCountedTests()
 
 	//lock
 	auto lockedPointer = weakPtr.Lock<RefCountedTestItem>();
+
+	if (lockedPointer == weakPtr)
+	{
+		std::cout << "lockedPointer is equal to weakPtr " << std::endl;
+	}
 
 	std::cout << "use count after lock: " << weakPtr.GetUseCount() << std::endl;
 

@@ -525,7 +525,8 @@ namespace st::utils
 
 	template<typename TReturnType, typename ... Args> Delegate<TReturnType, Args...> CreateDelegateFromFunction(TReturnType (*pFunctionPointer)(Args...))
 	{
-		auto pCaller = new typename Delegate<TReturnType, Args...>::FunctionDelegateCaller(pFunctionPointer);
+		typedef typename Delegate<TReturnType, Args...>::FunctionDelegateCaller FunctionDelegateCaller;
+		auto pCaller = new FunctionDelegateCaller(pFunctionPointer);
 		return Delegate<TReturnType, Args...>(pCaller);
 	}
 
