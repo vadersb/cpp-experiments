@@ -5,3 +5,4 @@
 #pragma once
 
 void DelegateTypesTest();
+void DelegatePoolableDebugTest();

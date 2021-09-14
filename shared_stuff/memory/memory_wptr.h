@@ -244,6 +244,11 @@ namespace st::memory
 			}
 		}
 
+		//COMPARISON
+		bool operator==(const wptr& ptrToCompareWith) const
+		{
+			return m_Pointer == ptrToCompareWith.m_Pointer;
+		}
 
 		//QUERIES
 		[[nodiscard]] bool ContainsValidPointer() const

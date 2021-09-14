@@ -183,6 +183,11 @@ namespace st::memory
 			return rcptr<U>(*this);
 		}
 
+		//COMPARISON
+		bool operator==(const rcptr& ptrToCompareWith) const
+		{
+			return m_Pointer == ptrToCompareWith.m_Pointer;
+		}
 
 		//RESET
 		void Reset()
