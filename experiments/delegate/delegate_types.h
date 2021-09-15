@@ -6,3 +6,4 @@
 
 void DelegateTypesTest();
 void DelegatePoolableDebugTest();
+void DelegateEqualityTest();

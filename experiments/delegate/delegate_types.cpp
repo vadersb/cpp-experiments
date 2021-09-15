@@ -209,3 +209,18 @@ void DelegatePoolableDebugTest()
 	std::cout << "call result: " << callResult << std::endl;
 	std::cout << "a: " << a << std::endl;
 }
+
+void DelegateEqualityTest()
+{
+	auto delegate = st::utils::CreateDelegateFromFunction(&SimpleFunction);
+	auto anotherDelegate = st::utils::CreateDelegateFromFunction(&SimpleFunction);
+
+	if (delegate == anotherDelegate)
+	{
+		std::cout << "delegates are equal!" << std::endl;
+	}
+	else
+	{
+		std::cout << "delegates are NOT equal!" << std::endl;
+	}
+}

@@ -14,6 +14,7 @@ int main()
 
 	DelegateTypesTest();
 	DelegatePoolableDebugTest();
+	DelegateEqualityTest();
 
 	//cleanup
 	st::memory::MemoryPoolRelease();

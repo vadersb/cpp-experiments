@@ -121,11 +121,11 @@ namespace st::utils
 		//COMPARISON
 		bool operator==(const Delegate& delegateToCompareWith) const
 		{
-			if (this == *delegateToCompareWith) return true;
+			if (this == &delegateToCompareWith) return true;
 
 			if (m_Caller != nullptr && delegateToCompareWith.m_Caller != nullptr)
 			{
-				return m_Caller->IsEqual(delegateToCompareWith.m_Caller);
+				return m_Caller->IsEqual(delegateToCompareWith.m_Caller.get());
 			}
 			else
 			{
