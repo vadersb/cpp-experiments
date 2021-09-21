@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include "memory_pool.h"
 #include "internal/memory_pool_bucket.h"
-
+#include "spdlog/spdlog.h"
 
 namespace st::memory
 {
@@ -28,18 +28,20 @@ namespace st::memory
 					2048,
 			};
 
+	constexpr int g_bucketItemsMult = 8;
+
 	constexpr int g_bucketItemsPerPage[g_bucketsCount] =
 			{
-				1024,
-				1024,
-				1024,
-				1024,
-				1024,
-				512,
-				256,
-				128,
-				64,
-				32,
+				1024 * g_bucketItemsMult,
+				1024 * g_bucketItemsMult,
+				1024 * g_bucketItemsMult,
+				1024 * g_bucketItemsMult,
+				1024 * g_bucketItemsMult,
+				512 * g_bucketItemsMult,
+				256 * g_bucketItemsMult,
+				128 * g_bucketItemsMult,
+				64 * g_bucketItemsMult,
+				32 * g_bucketItemsMult,
 			};
 
 	MemoryPoolBucket* g_Buckets[g_bucketsCount] =
@@ -64,6 +66,9 @@ namespace st::memory
 	{
 		assert(g_MemoryPoolReady == false);
 
+
+		spdlog::info("MemoryPoolInit");
+
 		//creating buckets
 		for (int i = 0; i < g_bucketsCount; i++)
 		{
@@ -79,11 +84,17 @@ namespace st::memory
 		assert(g_MemoryPoolReady == true);
 
 		//destroying buckets
+		int totalMemoryUsed = 0;
+
 		for (auto& g_Bucket : g_Buckets)
 		{
+			totalMemoryUsed += g_Bucket->GetTotalMemoryUsed();
+
 			delete g_Bucket;
 			g_Bucket = nullptr;
 		}
+
+		spdlog::info("MemoryPoolRelease. Total memory used: [{}]", totalMemoryUsed);
 
 		g_MemoryPoolReady = false;
 	}

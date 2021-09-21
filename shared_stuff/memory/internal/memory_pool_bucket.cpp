@@ -5,6 +5,7 @@
 #include <iostream>
 #include "memory_pool_bucket.h"
 #include <cassert>
+#include "spdlog/spdlog.h"
 
 namespace st::memory
 {
@@ -85,6 +86,8 @@ namespace st::memory
 
 		//adding page to pages
 		m_Pages.push_back(pNewPage);
+
+		spdlog::info("Adding new page for item size [{}], new pages count: [{}]", m_ItemSize, m_Pages.size());
 	}
 
 
@@ -97,6 +100,11 @@ namespace st::memory
 	int MemoryPoolBucket::GetFreeItemsCount() const
 	{
 		return (int)m_Items.size();
+	}
+
+	int MemoryPoolBucket::GetTotalMemoryUsed() const
+	{
+		return (int)m_Pages.size() * m_SizePerPage;
 	}
 
 
@@ -112,5 +120,8 @@ namespace st::memory
 
 		return false;
 	}
+
+
+
 
 }

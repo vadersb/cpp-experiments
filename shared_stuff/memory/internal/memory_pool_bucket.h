@@ -22,6 +22,7 @@ namespace st::memory
 
 		[[nodiscard]] int GetTotalItemsCount() const;
 		[[nodiscard]] int GetFreeItemsCount() const;
+		[[nodiscard]] int GetTotalMemoryUsed() const;
 
 	private:
 

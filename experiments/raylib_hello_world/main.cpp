@@ -3,6 +3,7 @@
 //
 
 #include "raylib.h"
+#include "spdlog\spdlog.h"
 
 int main()
 {
@@ -10,6 +11,8 @@ int main()
 	//--------------------------------------------------------------------------------------
 	const int ScreenWidth = 1280;
 	const int ScreenHeight = 800;
+
+	spdlog::info("Raylib hello world started.");
 
 	InitWindow(ScreenWidth, ScreenHeight, "raylib [core] example - basic window");
 
@@ -40,6 +43,8 @@ int main()
 	//--------------------------------------------------------------------------------------
 	CloseWindow();        // Close window and OpenGL context
 	//--------------------------------------------------------------------------------------
+
+	spdlog::info("Raylib hello world closed.");
 
 	return 0;
 }
