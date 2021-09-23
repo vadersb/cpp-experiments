@@ -18,6 +18,7 @@ void init(void)
 {
 	sg_desc desc;
 	CleanupStruct(desc);
+
 	desc.context = sapp_sgcontext();
 
 	sg_setup(desc);
@@ -57,8 +58,8 @@ sapp_desc sokol_main(int argc, char* argv[])
 	desc.init_cb = init;
 	desc.frame_cb = frame;
 	desc.cleanup_cb = cleanup;
-	desc.width = 400;
-	desc.height = 300;
+	desc.width = 1280;
+	desc.height = 800;
 	desc.window_title = "Clear Sample";
 
 	return desc;
