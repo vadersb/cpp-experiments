@@ -32,6 +32,11 @@ target_link_libraries(threading_tasks shared_stuff)
 
 
 
+#threading std
+add_executable(threading_std threading_std/main.cpp threading_std/main.h threading_std/async_stess_test.cpp)
+target_link_libraries(threading_std shared_stuff)
+
+
 #sokol hello world
 if (DEFINED SOKOL_DIR)
 
