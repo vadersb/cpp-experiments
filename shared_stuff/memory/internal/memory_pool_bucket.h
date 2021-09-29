@@ -38,5 +38,8 @@ namespace st::memory
 		std::vector<void*> m_Pages;
 		std::vector<void*> m_Items;
 	};
+
+	//todo new bucket for new memory pool
+	//later: *potential* performance increase to have m_CachedItems along with m_Items for data locality
 }
 

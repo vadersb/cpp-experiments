@@ -19,6 +19,9 @@ add_executable(memory_pool memory_pool/main.cpp)
 target_link_libraries(memory_pool shared_stuff)
 
 
+#memory pool benchmark
+add_executable(memory_pool_benchmark memory_pool_benchmark/main.cpp memory_pool_benchmark/main.h)
+target_link_libraries(memory_pool_benchmark shared_stuff)
 
 #delegate
 add_executable(delegate delegate/main.cpp delegate/delegate_types.h delegate/delegate_types.cpp)

@@ -149,4 +149,10 @@ namespace st::memory
 
 		return nullptr;
 	}
+
+
+	MemoryPoolSettings::MemoryPoolSettings() : m_BucketsCount(0)
+	{
+		memset(m_BucketDefinitions, 0, sizeof(BucketDefinition) * MaxPagesCount);
+	}
 }
