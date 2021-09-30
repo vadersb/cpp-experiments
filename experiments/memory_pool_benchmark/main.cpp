@@ -16,9 +16,9 @@ int main()
 	st::memory::MemoryPoolSettings settings;
 
 
-//	st::memory::MemoryPoolSingleThreaded::Init();
-//
-//	st::memory::MemoryPoolSingleThreaded::Release();
+	st::memory::MemoryPoolSingleThreaded::Init();
+
+    st::memory::MemoryPoolSingleThreaded::Release();
 
 	return 0;
 }

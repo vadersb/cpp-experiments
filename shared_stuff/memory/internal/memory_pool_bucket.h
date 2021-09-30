@@ -10,46 +10,15 @@
 
 namespace st::memory
 {
+
 	class MemoryPoolBucket
-	{
-	public:
-
-		explicit MemoryPoolBucket(int itemSize, int itemsPerPage, bool preWarm);
-
-		~MemoryPoolBucket();
-
-		void* Allocate();
-		void Deallocate(void* p);
-
-		[[nodiscard]] int GetTotalItemsCount() const;
-		[[nodiscard]] int GetFreeItemsCount() const;
-		[[nodiscard]] int GetTotalMemoryUsed() const;
-
-	private:
-
-		void AddPage();
-
-		bool CheckIfAddressIsWithinPages (void* p) const;
-
-
-		int m_ItemSize;
-		int m_ItemsPerPage;
-		int m_SizePerPage;
-
-		std::vector<void*> m_Pages;
-		std::vector<void*> m_Items;
-	};
-
-	//todo remove old code and rename MemoryPoolBucketNew class
-
-	class MemoryPoolBucketNew
 	{
 		//later: *potential* performance increase to have m_CachedItems along with m_Items for data locality
 
 	public:
 
-		MemoryPoolBucketNew();
-		~MemoryPoolBucketNew();
+		MemoryPoolBucket();
+		~MemoryPoolBucket();
 
 		void Setup(const MemoryPoolSettings::BucketDefinition& bucketDefinition);
 
@@ -59,6 +28,10 @@ namespace st::memory
 		[[nodiscard]] int GetTotalItemsCount() const;
 		[[nodiscard]] int GetFreeItemsCount() const;
 		[[nodiscard]] int GetTotalMemoryUsed() const;
+		[[nodiscard]] inline int GetItemSize() const
+		{
+			return m_ItemSize;
+		}
 
 	private:
 
@@ -66,9 +39,24 @@ namespace st::memory
 
 		bool CheckIfAddressIsWithinPages (void* p) const;
 
+		[[nodiscard]] inline int GetPageSize(bool isFirst) const
+		{
+			if (isFirst)
+			{
+				return m_FirstPageItemsCount * m_ItemSize;
+			}
+			else
+			{
+				return m_ExtraPageItemsCount * m_ItemSize;
+			}
+		}
+
+		[[maybe_unused]]
+		static int GetAlignment([[maybe_unused]] int itemSize);
+
 		int m_ItemSize;
 		int m_FirstPageItemsCount;
-		int m_PageItemsCount;
+		int m_ExtraPageItemsCount;
 
 		std::vector<void*> m_Pages;
 		std::vector<void*> m_Items;

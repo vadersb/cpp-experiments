@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cassert>
+
 namespace st::memory
 {
 
@@ -17,7 +19,7 @@ namespace st::memory
 		{
 		public:
 
-			BucketDefinition() : m_ItemSize(0), m_FirstPageItemsCount(0), m_PageItemsCount(0), m_PreWarmFirstPage(false)
+			BucketDefinition() : m_ItemSize(0), m_FirstPageItemsCount(0), m_ExtraPageItemsCount(0), m_PreWarmFirstPage(false)
 			{
 
 			}
@@ -25,18 +27,18 @@ namespace st::memory
 			BucketDefinition(int itemSize, int firstPageItemsCount, int pageItemsCount, bool preWarmFirstPage = true) :
 					m_ItemSize(itemSize),
 					m_FirstPageItemsCount(firstPageItemsCount),
-					m_PageItemsCount(pageItemsCount),
+					m_ExtraPageItemsCount(pageItemsCount),
 					m_PreWarmFirstPage(preWarmFirstPage)
 			{
 				assert(m_ItemSize > 0);
 				assert(m_FirstPageItemsCount > 0);
-				assert(m_PageItemsCount > 0);
+				assert(m_ExtraPageItemsCount > 0);
 			}
 
 
 			int m_ItemSize;
 			int m_FirstPageItemsCount;
-			int m_PageItemsCount;
+			int m_ExtraPageItemsCount;
 			bool m_PreWarmFirstPage;
 		};
 
@@ -45,14 +47,13 @@ namespace st::memory
 		[[nodiscard]] int GetBucketsCount() const;
 		[[nodiscard]] const BucketDefinition& GetBucketDefinition(int index) const;
 
+		void AddBucketDefinition(int itemSize, int firstPageItemsCount, int extraPageItemsCount, bool preWarmFirstPage);
+
 	private:
-
-
 
 		int m_BucketsCount;
 
 		BucketDefinition m_BucketDefinitions[MaxBucketsCount];
-
 
 	};
 

@@ -2,19 +2,21 @@
 // Created by Alexander Samarin on 06.08.2021.
 //
 
-#include <string>
-#include <iostream>
-#include <vector>
-#include <cassert>
 
+
+#include "memory_allocator.h"
 #include "memory_pool.h"
 #include "memory_poolable.h"
 #include "memory_reference_counted.h"
 #include "memory_rcptr.h"
 #include "memory_wptr.h"
-#include "memory_allocator.h"
 
-class TestItem : public st::memory::Poolable
+#include <string>
+#include <iostream>
+#include <vector>
+#include <cassert>
+
+class TestItem : public st::memory::Poolable<false>
 {
 public:
 
@@ -174,7 +176,8 @@ void AllocatorTests();
 int main()
 {
 	//init
-	st::memory::MemoryPoolInit(true);
+	st::memory::MemoryPoolSingleThreaded::Init();
+	st::memory::MemoryPoolMultiThreaded::Init();
 
 	//doing the tests
 	SimpleTests();
@@ -184,24 +187,25 @@ int main()
 	AllocatorTests();
 
 	//cleanup
-	st::memory::MemoryPoolRelease();
+	st::memory::MemoryPoolMultiThreaded::Release();
+	st::memory::MemoryPoolSingleThreaded::Release();
 
 	return 0;
 }
 
 void SimpleTests()
 {
-	int* pInt = st::memory::MemoryPoolAllocate<int>();
+	int* pInt = st::memory::MemoryPoolSingleThreaded::Allocate<int>();
 
 	*pInt = 123;
 
-	st::memory::MemoryPoolDeallocate(pInt);
+	st::memory::MemoryPoolSingleThreaded::Deallocate(pInt);
 
-	auto pAnotherInt = st::memory::MemoryPoolAllocate<int>();
+	auto pAnotherInt = st::memory::MemoryPoolSingleThreaded::Allocate<int>();
 
 	*pAnotherInt = 456;
 
-	st::memory::MemoryPoolDeallocate(pAnotherInt);
+	st::memory::MemoryPoolSingleThreaded::Deallocate(pAnotherInt);
 }
 
 void PoolableItemTests()

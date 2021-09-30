@@ -12,29 +12,22 @@
 
 namespace st::memory
 {
-	//init and release
-	void MemoryPoolInit(bool preWarm = false);
-	void MemoryPoolRelease();
-
-	//allocate and deallocate
-	void* MemoryPoolAllocate(size_t size);
-
-	template<typename T> T* MemoryPoolAllocate()
-	{
-		return static_cast<T*>(MemoryPoolAllocate(sizeof(T)));
-	}
-
-	void MemoryPoolDeallocate(void* p, size_t size);
-
-	template<typename T> void MemoryPoolDeallocate(T* p)
-	{
-		MemoryPoolDeallocate(p, sizeof(T));
-	}
-
-
 	template<bool isThreadSafe> class MemoryPool final
 	{
 	public:
+
+		static void Init()
+		{
+			if constexpr(isThreadSafe)
+			{
+				std::lock_guard lock(m_Mutex);
+				DoInit();
+			}
+			else
+			{
+				DoInit();
+			}
+		}
 
 		static void Init(const MemoryPoolSettings& settings)
 		{
@@ -49,6 +42,7 @@ namespace st::memory
 			}
 		}
 
+		//later: maybe release is just a flag, then once all threads return items via Deallocate - then do the cleanup
 		static void Release()
 		{
 			if constexpr(isThreadSafe)
@@ -62,27 +56,73 @@ namespace st::memory
 			}
 		}
 
-		static void* Allocate(size_t size)
+		[[nodiscard]] static void* Allocate(size_t size)
 		{
-			//todo
-			return nullptr;
+			if constexpr(isThreadSafe)
+			{
+				std::lock_guard lock(m_Mutex);
+				assert(s_pInstance != nullptr);
+				return s_pInstance->DoAllocate(size);
+			}
+			else
+			{
+				assert(s_pInstance != nullptr);
+				return s_pInstance->DoAllocate(size);
+			}
 		}
 
-		template<typename T> void* Allocate()
+		template<typename T> [[nodiscard]] static T* Allocate()
 		{
-			//todo sizeof(T)
-			return nullptr;
+			if constexpr(isThreadSafe)
+			{
+				std::lock_guard lock(m_Mutex);
+				assert(s_pInstance != nullptr);
+				return reinterpret_cast<T*>(s_pInstance->DoAllocate(sizeof(T)));
+			}
+			else
+			{
+				assert(s_pInstance != nullptr);
+				return reinterpret_cast<T*>(s_pInstance->DoAllocate(sizeof(T)));
+			}
 		}
 
-		static void Deallocate(void* pPointer, size_t size)
+		static void Deallocate(void* pointer, size_t size)
 		{
-			//todo
+			if constexpr(isThreadSafe)
+			{
+				std::lock_guard lock(m_Mutex);
+				assert(s_pInstance != nullptr);
+				s_pInstance->DoDeallocate(pointer, size);
+			}
+			else
+			{
+				assert(s_pInstance != nullptr);
+				s_pInstance->DoDeallocate(pointer, size);
+			}
+		}
+
+		template<typename T>static void  Deallocate(T* pointer)
+		{
+			if constexpr(isThreadSafe)
+			{
+				std::lock_guard lock(m_Mutex);
+				assert(s_pInstance != nullptr);
+				s_pInstance->DoDeallocate(pointer, sizeof(T));
+			}
+			else
+			{
+				assert(s_pInstance != nullptr);
+				s_pInstance->DoDeallocate(pointer, sizeof(T));
+			}
 		}
 
 
 	private:
 
+		static constexpr int InvalidIndex = -1;
+
 		MemoryPool() = default;
+
 		MemoryPool(const MemoryPoolSettings& settings)
 		{
 			m_BucketsCount = settings.GetBucketsCount();
@@ -113,17 +153,71 @@ namespace st::memory
 			s_pInstance = nullptr;
 		}
 
+		inline void* DoAllocate(size_t size)
+		{
+			int bucketIndex = GetBucketIndex(size);
+
+			if (bucketIndex == InvalidIndex)
+			{
+				return std::malloc(size);
+			}
+			else
+			{
+				return m_Buckets[bucketIndex].Allocate();
+			}
+		}
+
+		inline void DoDeallocate(void* pointer, size_t size)
+		{
+			int bucketIndex = GetBucketIndex(size);
+
+			if (bucketIndex == InvalidIndex)
+			{
+				std::free(pointer);
+			}
+			else
+			{
+				m_Buckets[bucketIndex].Deallocate(pointer);
+			}
+		}
+
+		inline int GetBucketIndex(size_t size)
+		{
+			assert(m_BucketsCount > 0);
+
+			int maxIndex = m_BucketsCount - 1;
+
+			if (m_Buckets[maxIndex].GetItemSize() < size)
+			{
+				return InvalidIndex;
+			}
+
+			for (int i = 0; i < m_BucketsCount; i++)
+			{
+				if (m_Buckets[i].GetItemSize() >= size)
+				{
+					return i;
+				}
+			}
+
+			assert(false);
+			return InvalidIndex;
+		}
+
 		//static data
 		static std::mutex m_Mutex;
-		static MemoryPool* s_pInstance = nullptr;
+		static inline MemoryPool* s_pInstance = nullptr;
 
 		//instance data
 		int m_BucketsCount;
-		MemoryPoolBucketNew m_Buckets[MemoryPoolSettings::MaxBucketsCount];
+		MemoryPoolBucket m_Buckets[MemoryPoolSettings::MaxBucketsCount];
 
 		//todo current and max requests per item size (map containers) for statistics logging
 
 	};
 
+	using MemoryPoolSingleThreaded [[maybe_unused]] = MemoryPool<false>;
+	using MemoryPoolMultiThreaded  [[maybe_unused]] = MemoryPool<true>;
 
+	template<bool isThreadSafe> std::mutex MemoryPool<isThreadSafe>::m_Mutex;
 }

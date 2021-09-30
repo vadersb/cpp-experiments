@@ -21,7 +21,7 @@ namespace st::memory
 		{
 			std::size_t size = n * sizeof(T);
 
-			void* pResult = MemoryPoolAllocate(size);
+			void* pResult = MemoryPoolMultiThreaded::Allocate(size);
 
 			return reinterpret_cast<T*>(pResult);
 		}
@@ -30,12 +30,12 @@ namespace st::memory
 		{
 			std::size_t size = n * sizeof(T);
 
-			MemoryPoolDeallocate(p, size);
+			MemoryPoolMultiThreaded::Deallocate(p, size);
 		}
 	};
 
 	template <class T, class U>
 	bool operator==(const Allocator <T>&, const Allocator <U>&) { return true; }
-	template <class T, class U>
+	template <class T, class U, bool isThreadSafe = true>
 	bool operator!=(const Allocator <T>&, const Allocator <U>&) { return false; }
 }

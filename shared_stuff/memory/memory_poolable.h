@@ -5,17 +5,23 @@
 #pragma once
 
 #include <cstddef>
-
+#include "memory_pool.h"
 
 namespace st::memory
 {
-	class Poolable
+	template<bool isThreadSafe> class Poolable
 	{
 	public:
 
-		static void* operator new(std::size_t size);
+		static void* operator new(std::size_t size)
+		{
+			return MemoryPool<isThreadSafe>::Allocate(size);
+		}
 
-		static void operator delete(void* p, std::size_t size);
+		static void operator delete(void* p, std::size_t size)
+		{
+			MemoryPool<isThreadSafe>::Deallocate(p, size);
+		}
 
 	protected:
 
