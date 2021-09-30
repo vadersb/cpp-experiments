@@ -155,4 +155,19 @@ namespace st::memory
 	{
 		memset(m_BucketDefinitions, 0, sizeof(BucketDefinition) * MaxPagesCount);
 	}
+
+
+	int MemoryPoolSettings::GetBucketsCount() const
+	{
+		return m_BucketsCount;
+	}
+
+
+	const MemoryPoolSettings::BucketDefinition &MemoryPoolSettings::GetBucketDefinition(int index) const
+	{
+		assert(index >= 0);
+		assert(index < MaxBucketsCount);
+
+		return m_BucketDefinitions[index];
+	}
 }

@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <mutex>
 #include <cassert>
-
+#include "internal/memory_pool_bucket.h"
 
 namespace st::memory
 {
@@ -32,127 +32,98 @@ namespace st::memory
 	}
 
 
-
-
-
-
-
-
-	class MemoryPoolSettings final
+	template<bool isThreadSafe> class MemoryPool final
 	{
 	public:
 
-		static constexpr int MaxPagesCount = 256;
-
-		struct BucketDefinition
+		static void Init(const MemoryPoolSettings& settings)
 		{
-		public:
-			int m_FirstPageItemsCount;
-			int m_PageItemsCount;
-			bool m_PreWarmFirstPage;
-		};
+			if constexpr(isThreadSafe)
+			{
+				std::lock_guard lock(m_Mutex);
+				DoInit(settings);
+			}
+			else
+			{
+				DoInit(settings);
+			}
+		}
 
-		MemoryPoolSettings();
+		static void Release()
+		{
+			if constexpr(isThreadSafe)
+			{
+				std::lock_guard lock(m_Mutex);
+				DoRelease();
+			}
+			else
+			{
+				DoRelease();
+			}
+		}
+
+		static void* Allocate(size_t size)
+		{
+			//todo
+			return nullptr;
+		}
+
+		template<typename T> void* Allocate()
+		{
+			//todo sizeof(T)
+			return nullptr;
+		}
+
+		static void Deallocate(void* pPointer, size_t size)
+		{
+			//todo
+		}
+
 
 	private:
 
+		MemoryPool() = default;
+		MemoryPool(const MemoryPoolSettings& settings)
+		{
+			m_BucketsCount = settings.GetBucketsCount();
+			assert(m_BucketsCount > 0);
 
+			for (int i = 0; i < m_BucketsCount; i++)
+			{
+				m_Buckets[i].Setup(settings.GetBucketDefinition(i));
+			}
+		}
 
+		static inline void DoInit()
+		{
+			assert(s_pInstance == nullptr);
+			s_pInstance = new MemoryPool(GetDefaultMemoryPoolSettings(isThreadSafe));
+		}
+
+		static inline void DoInit(const MemoryPoolSettings& settings)
+		{
+			assert(s_pInstance == nullptr);
+			s_pInstance = new MemoryPool(settings);
+		}
+
+		static inline void DoRelease()
+		{
+			assert(s_pInstance != nullptr);
+			delete s_pInstance;
+			s_pInstance = nullptr;
+		}
+
+		//static data
+		static std::mutex m_Mutex;
+		static MemoryPool* s_pInstance = nullptr;
+
+		//instance data
 		int m_BucketsCount;
+		MemoryPoolBucketNew m_Buckets[MemoryPoolSettings::MaxBucketsCount];
 
-		BucketDefinition m_BucketDefinitions[MaxPagesCount];
-
+		//todo current and max requests per item size (map containers) for statistics logging
 
 	};
-
-
-	//todo memory pool uses a fixed array of buckets, so there is no need to store settings (goal: improving memory locality)
-
-//	template<bool isThreadSafe> class MemoryPool final
-//	{
-//	public:
-//
-//		static void Init(MemoryPoolSettings* pSettings = nullptr)
-//		{
-//			if constexpr(isThreadSafe)
-//			{
-//				std::lock_guard lock(m_Mutex);
-//				DoInit(pSettings);
-//			}
-//			else
-//			{
-//				DoInit(pSettings);
-//			}
-//		}
-//
-//		static void Release()
-//		{
-//			if constexpr(isThreadSafe)
-//			{
-//				std::lock_guard lock(m_Mutex);
-//				DoRelease();
-//			}
-//			else
-//			{
-//				DoRelease();
-//			}
-//		}
-//
-//
-//
-//	private:
-//
-//		static inline void DoInit(MemoryPoolSettings* pSettings)
-//		{
-//			assert(m_IsInitialized == false);
-//
-//			m_pSettings = pSettings;
-//
-//			if (m_pSettings == nullptr)
-//			{
-//				m_pSettings = CreateDefaultSettings();
-//			}
-//
-//			assert(m_pSettings != nullptr);
-//
-//			m_IsInitialized = true;
-//		}
-//
-//		static inline void DoRelease()
-//		{
-//			assert(m_IsInitialized == true);
-//			assert(m_pSettings != nullptr);
-//
-//			delete m_pSettings;
-//			m_pSettings = nullptr;
-//		}
-//
-//		//default settings
-//		static MemoryPoolSettings* CreateDefaultSettings()
-//		{
-//			MemoryPoolSettings* pSettings = new MemoryPoolSettings();
-//
-//			return pSettings;
-//		}
-//
-//		//instantiation is disabled
-//		MemoryPool() = default;
-//
-//		static MemoryPoolSettings* m_pSettings;
-//
-//		static bool m_IsInitialized;
-//
-//		static std::mutex m_Mutex;
-//
-//
-//	};
-//
-//	using MemoryPoolSingleThreaded = MemoryPool<false>;
-//	using MemoryPoolThreadSafe = MemoryPool<true>;
-//
-//	template<bool isThreadSafe> bool MemoryPool<isThreadSafe>::m_IsInitialized = false;
-//	template<bool isThreadSafe> MemoryPoolSettings* MemoryPool<isThreadSafe>::m_pSettings = nullptr;
-//	template<bool isThreadSafe> std::mutex MemoryPool<isThreadSafe>::m_Mutex;
 
 
 }

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <vector>
+#include "memory_pool_settings.h"
 
 
 namespace st::memory
@@ -39,7 +40,39 @@ namespace st::memory
 		std::vector<void*> m_Items;
 	};
 
-	//todo new bucket for new memory pool
-	//later: *potential* performance increase to have m_CachedItems along with m_Items for data locality
+	//todo remove old code and rename MemoryPoolBucketNew class
+
+	class MemoryPoolBucketNew
+	{
+		//later: *potential* performance increase to have m_CachedItems along with m_Items for data locality
+
+	public:
+
+		MemoryPoolBucketNew();
+		~MemoryPoolBucketNew();
+
+		void Setup(const MemoryPoolSettings::BucketDefinition& bucketDefinition);
+
+		[[nodiscard]] void* Allocate();
+		void Deallocate(void* p);
+
+		[[nodiscard]] int GetTotalItemsCount() const;
+		[[nodiscard]] int GetFreeItemsCount() const;
+		[[nodiscard]] int GetTotalMemoryUsed() const;
+
+	private:
+
+		void AddPage();
+
+		bool CheckIfAddressIsWithinPages (void* p) const;
+
+		int m_ItemSize;
+		int m_FirstPageItemsCount;
+		int m_PageItemsCount;
+
+		std::vector<void*> m_Pages;
+		std::vector<void*> m_Items;
+	};
+
 }
 

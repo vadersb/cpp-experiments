@@ -13,6 +13,9 @@ int main()
 {
 	SimpleTemplateTest();
 
+	st::memory::MemoryPoolSettings settings;
+
+
 //	st::memory::MemoryPoolSingleThreaded::Init();
 //
 //	st::memory::MemoryPoolSingleThreaded::Release();
