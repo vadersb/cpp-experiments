@@ -376,7 +376,7 @@ void PrintString(std::string_view stringToPrint);
 
 void AllocatorTests()
 {
-	std::vector<int, st::memory::Allocator<int>> testVector;
+	std::vector<int, st::memory::AllocatorSingleThreaded<int>> testVector;
 
 	testVector.reserve(64);
 
@@ -385,7 +385,7 @@ void AllocatorTests()
 		testVector.push_back(i);
 	}
 
-	using stringWithAlloc = std::basic_string<char, std::char_traits<char>, st::memory::Allocator<char>>;
+	using stringWithAlloc = std::basic_string<char, std::char_traits<char>, st::memory::AllocatorMultiThreaded<char>>;
 
 	stringWithAlloc testString;
 

@@ -8,6 +8,7 @@
 #include "spdlog/spdlog.h"
 
 void BenchmarkRun(int runNumber);
+void MultithreadedBenchmarkRun(int runNumber);
 void SimpleTemplateTest();
 
 enum class AllocType
@@ -25,17 +26,27 @@ int main()
 	st::memory::MemoryPoolSingleThreaded::Init();
 	st::memory::MemoryPoolMultiThreaded::Init();
 
-	const int BenchmarkRuns = 10;
+	spdlog::info("---------- Single threaded benchmark ----------");
+
+	const int BenchmarkRuns = 20;
 
 	for (int i = 0; i < BenchmarkRuns; i++)
 	{
 		BenchmarkRun(i);
 	}
 
+	spdlog::info("---------- Multithreaded benchmark ----------");
+
+	for (int i = 0; i < BenchmarkRuns; i++)
+	{
+		MultithreadedBenchmarkRun(i);
+	}
+
+
 	st::memory::MemoryPoolMultiThreaded::Release();
 	st::memory::MemoryPoolSingleThreaded::Release();
 
-	std::getchar();
+	//std::getchar();
 
 	return 0;
 }
@@ -203,9 +214,9 @@ auto GetDurationInMicroseconds(TimePoint from, TimePoint to)
 
 void BenchmarkRun(int runNumber)
 {
-	spdlog::info("BENCHMARK RUN {}", runNumber + 1);
+	spdlog::info("ST BENCHMARK RUN {}", runNumber + 1);
 
-	const int BenchmarkIterationsCount = 500000;
+	const int BenchmarkIterationsCount = 100000;
 
 	//std
 	{
@@ -236,6 +247,58 @@ void BenchmarkRun(int runNumber)
 }
 
 
+void MultithreadedBenchmarkRun(int runNumber)
+{
+	spdlog::info("MT BENCHMARK RUN {}", runNumber + 1);
+
+	const int BenchmarkIterationsCount = 25000;
+
+	int threadsCount = 4; // std::max<int>(2, std::thread::hardware_concurrency() - 2);
+
+	std::vector<std::thread> threads;
+	threads.reserve(threadsCount);
+
+	//std
+	{
+		auto timeStart = std::chrono::high_resolution_clock::now();
+
+		for (int i = 0; i < threadsCount; i++)
+		{
+			threads.emplace_back(Benchmark<AllocType::Std>, BenchmarkIterationsCount);
+		}
+
+		for (int i = 0; i < threadsCount; i++)
+		{
+			threads[i].join();
+		}
+
+		auto timeEnd = std::chrono::high_resolution_clock::now();
+		spdlog::info("              std time: {}", GetDurationInMicroseconds(timeStart, timeEnd));
+	}
+
+	threads.clear();
+
+	//memory pool multithreaded
+	{
+		auto timeStart = std::chrono::high_resolution_clock::now();
+
+		for (int i = 0; i < threadsCount; i++)
+		{
+			threads.emplace_back(Benchmark<AllocType::PoolMultiThreaded>, BenchmarkIterationsCount);
+		}
+
+		for (int i = 0; i < threadsCount; i++)
+		{
+			threads[i].join();
+		}
+
+		auto timeEnd = std::chrono::high_resolution_clock::now();
+		spdlog::info("   memory pool MT time: {}", GetDurationInMicroseconds(timeStart, timeEnd));
+	}
+
+	threads.clear();
+
+}
 
 
 
