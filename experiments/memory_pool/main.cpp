@@ -380,7 +380,7 @@ void AllocatorTests()
 
 	testVector.reserve(64);
 
-	for (int i = 0; i < 32; i++)
+	for (int i = 0; i < 1024; i++)
 	{
 		testVector.push_back(i);
 	}

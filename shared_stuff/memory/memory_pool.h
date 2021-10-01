@@ -8,7 +8,9 @@
 #include <type_traits>
 #include <mutex>
 #include <cassert>
+#include <map>
 #include "internal/memory_pool_bucket.h"
+#include "spdlog/spdlog.h"
 
 namespace st::memory
 {
@@ -123,7 +125,7 @@ namespace st::memory
 
 		MemoryPool() = default;
 
-		MemoryPool(const MemoryPoolSettings& settings)
+		MemoryPool(const MemoryPoolSettings& settings) : m_Requests_Total(), m_Requests_Current()
 		{
 			m_BucketsCount = settings.GetBucketsCount();
 			assert(m_BucketsCount > 0);
@@ -149,12 +151,17 @@ namespace st::memory
 		static inline void DoRelease()
 		{
 			assert(s_pInstance != nullptr);
+
+			s_pInstance->LogStatistics();
+
 			delete s_pInstance;
 			s_pInstance = nullptr;
 		}
 
 		inline void* DoAllocate(size_t size)
 		{
+			RegisterRequestAllocate(size);
+
 			int bucketIndex = GetBucketIndex(size);
 
 			if (bucketIndex == InvalidIndex)
@@ -169,6 +176,8 @@ namespace st::memory
 
 		inline void DoDeallocate(void* pointer, size_t size)
 		{
+			RegisterRequestDeallocate(size);
+
 			int bucketIndex = GetBucketIndex(size);
 
 			if (bucketIndex == InvalidIndex)
@@ -204,6 +213,82 @@ namespace st::memory
 			return InvalidIndex;
 		}
 
+		//statistics
+		inline void RegisterRequestAllocate(size_t size)
+		{
+			//total
+			{
+				auto search = m_Requests_Total.find(size);
+				if (search != m_Requests_Total.end())
+				{
+					search->second++;
+				}
+				else
+				{
+					m_Requests_Total[size] = 1;
+				}
+			}
+
+			//max
+			{
+				auto search = m_Requests_Current.find(size);
+				if (search != m_Requests_Current.end())
+				{
+					search->second++;
+
+					auto inMax = m_Requests_Max.find(size);
+
+					if (inMax->second < search->second)
+					{
+						inMax->second = search->second;
+					}
+				}
+				else
+				{
+					m_Requests_Current[size] = 1;
+					m_Requests_Max[size] = 1;
+				}
+			}
+		}
+
+		inline void RegisterRequestDeallocate(size_t size)
+		{
+			//total - no need
+
+			//max
+			{
+				auto search = m_Requests_Current.find(size);
+				if (search != m_Requests_Current.end())
+				{
+					search->second--;
+				}
+				else
+				{
+					spdlog::error("Memory pool: deallocation request for size [{}] with no previous allocation request registered!", size);
+				}
+			}
+		}
+
+		void LogStatistics()
+		{
+			if (isThreadSafe)
+			{
+				spdlog::info("Memory Pool (Multithreaded) requests stats:");
+			}
+			else
+			{
+				spdlog::info("Memory Pool (Single threaded) requests stats:");
+			}
+
+			for(auto& [key, value] : m_Requests_Total)
+			{
+				auto requestsMax = m_Requests_Max[key];
+
+				spdlog::info("   [{}] requests. Total: {}   Max: {}", key, value, requestsMax);
+			}
+		}
+
+
 		//static data
 		static std::mutex m_Mutex;
 		static inline MemoryPool* s_pInstance = nullptr;
@@ -212,7 +297,9 @@ namespace st::memory
 		int m_BucketsCount;
 		MemoryPoolBucket m_Buckets[MemoryPoolSettings::MaxBucketsCount];
 
-		//todo current and max requests per item size (map containers) for statistics logging
+		std::map<int32_t, int64_t> m_Requests_Total;
+		std::map<int32_t, int64_t> m_Requests_Current;
+		std::map<int32_t, int64_t> m_Requests_Max;
 
 	};
 
