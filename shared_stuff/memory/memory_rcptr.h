@@ -8,6 +8,8 @@
 #include "memory_wptr.h"
 #include "utils_cast.h"
 
+#define RCPTR_THREAD_VALIDATION
+
 
 namespace st::memory
 {
@@ -33,7 +35,7 @@ namespace st::memory
 		//CONSTRUCTORS
 		rcptr() : m_Pointer(nullptr)
 		{
-
+			ThreadStore();
 		}
 
 
@@ -42,11 +44,13 @@ namespace st::memory
 		//rcptr
 		rcptr(const rcptr& anotherPointer) : m_Pointer(anotherPointer.m_Pointer)
 		{
+			ThreadStore();
 			IncreaseRefCount();
 		}
 
 		template<typename U> explicit rcptr(const rcptr<U>& anotherPointer)
 		{
+			ThreadStore();
 			m_Pointer = st::utils::CheckedDynamicCastUpDown(anotherPointer.m_Pointer);
 
 			IncreaseRefCount();
@@ -55,6 +59,7 @@ namespace st::memory
 		//wptr
 		explicit rcptr(const wptr<T>& weakPointer)
 		{
+			ThreadStore();
 			if (weakPointer.m_Pointer == nullptr || weakPointer.m_Pointer->IsOutOfScope())
 			{
 				m_Pointer = nullptr;
@@ -70,6 +75,7 @@ namespace st::memory
 
 		template<typename U> explicit rcptr(const wptr<U>& weakPointer)
 		{
+			ThreadStore();
 			if (weakPointer.m_Pointer == nullptr || weakPointer.m_Pointer->IsOutOfScope())
 			{
 				m_Pointer = nullptr;
@@ -88,11 +94,13 @@ namespace st::memory
 		//rcptr
 		rcptr(rcptr&& pointerToMoveFrom)  noexcept : m_Pointer(pointerToMoveFrom.m_Pointer)
 		{
+			ThreadStore();
 			pointerToMoveFrom.m_Pointer = nullptr;
 		}
 
 		template<typename U> explicit rcptr(rcptr<U>&& pointerToMoveFrom)
 		{
+			ThreadStore();
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(pointerToMoveFrom.m_Pointer);
 
 			pointerToMoveFrom.m_Pointer = nullptr;
@@ -110,6 +118,8 @@ namespace st::memory
 		{
 			if (this == &otherRCPtr) return *this;
 			if (m_Pointer == otherRCPtr.m_Pointer) return *this;
+
+			ThreadCheckAgainst(otherRCPtr);
 
 			DecreaseRefCountAndReset();
 			m_Pointer = otherRCPtr.m_Pointer;
@@ -215,24 +225,28 @@ namespace st::memory
 		//POINTER ACCESS
 		inline T* operator ->() const noexcept
 		{
+			ThreadCheck();
 			assert(m_Pointer != nullptr);
 			return m_Pointer;
 		}
 
 		inline T& operator *() const noexcept
 		{
+			ThreadCheck();
 			assert(m_Pointer != nullptr);
 			return *m_Pointer;
 		}
 
 		inline T* Get() const noexcept
 		{
+			ThreadCheck();
 			assert(m_Pointer != nullptr);
 			return m_Pointer;
 		}
 
 		template<typename U> U* Get() const
 		{
+			ThreadCheck();
 			U* pResult = st::utils::CheckedDynamicCastUpDown<T, U>(m_Pointer);
 			assert(pResult != nullptr);
 			return pResult;
@@ -251,6 +265,7 @@ namespace st::memory
 
 		[[nodiscard]] int GetUseCount() const
 		{
+			ThreadCheck();
 			if (m_Pointer != nullptr)
 			{
 				return m_Pointer->GetReferenceCount();
@@ -266,6 +281,7 @@ namespace st::memory
 		//CONSTRUCTORS
 		explicit rcptr(T* p, bool isJustCreated) : m_Pointer(p)
 		{
+			ThreadStore();
 			if (isJustCreated == false)
 			{
 				IncreaseRefCount();
@@ -281,6 +297,7 @@ namespace st::memory
 
 		template<typename U> explicit rcptr(U* ptr, bool isJustCreated)
 		{
+			ThreadStore();
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
 
 			if (isJustCreated == false)
@@ -315,6 +332,20 @@ namespace st::memory
 
 
 		T* m_Pointer;
+
+#ifdef RCPTR_THREAD_VALIDATION
+		std::thread::id m_ThreadID;
+
+		inline void ThreadStore() {m_ThreadID = std::this_thread::get_id();}
+		inline void ThreadCheck() const { assert( m_ThreadID == std::this_thread::get_id() ); }
+		template<typename U> inline void ThreadCheckAgainst(const rcptr<U>& otherRCPtr) const {assert( m_ThreadID == otherRCPtr.m_ThreadID ); }
+
+#else
+		inline void ThreadStore() {}
+		inline void ThreadCheck() {}
+		template<typename U> inline void ThreadCheckAgainst(const rcptr<U>& otherRCPtr) {}
+#endif
+
 	};
 
 

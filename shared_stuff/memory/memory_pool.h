@@ -69,6 +69,7 @@ namespace st::memory
 			else
 			{
 				assert(s_pInstance != nullptr);
+				assert(s_InitThreadID == std::this_thread::get_id());
 				return s_pInstance->DoAllocate(size);
 			}
 		}
@@ -84,6 +85,7 @@ namespace st::memory
 			else
 			{
 				assert(s_pInstance != nullptr);
+				assert(s_InitThreadID == std::this_thread::get_id());
 				return reinterpret_cast<T*>(s_pInstance->DoAllocate(sizeof(T)));
 			}
 		}
@@ -99,6 +101,7 @@ namespace st::memory
 			else
 			{
 				assert(s_pInstance != nullptr);
+				assert(s_InitThreadID == std::this_thread::get_id());
 				s_pInstance->DoDeallocate(pointer, size);
 			}
 		}
@@ -114,6 +117,7 @@ namespace st::memory
 			else
 			{
 				assert(s_pInstance != nullptr);
+				assert(s_InitThreadID == std::this_thread::get_id());
 				s_pInstance->DoDeallocate(pointer, sizeof(T));
 			}
 		}
@@ -139,18 +143,21 @@ namespace st::memory
 		static inline void DoInit()
 		{
 			assert(s_pInstance == nullptr);
+			s_InitThreadID = std::this_thread::get_id();
 			s_pInstance = new MemoryPool(GetDefaultMemoryPoolSettings(isThreadSafe));
 		}
 
 		static inline void DoInit(const MemoryPoolSettings& settings)
 		{
 			assert(s_pInstance == nullptr);
+			s_InitThreadID = std::this_thread::get_id();
 			s_pInstance = new MemoryPool(settings);
 		}
 
 		static inline void DoRelease()
 		{
 			assert(s_pInstance != nullptr);
+			assert(s_InitThreadID == std::this_thread::get_id());
 
 			s_pInstance->LogStatistics();
 
@@ -290,6 +297,7 @@ namespace st::memory
 
 
 		//static data
+		static std::thread::id s_InitThreadID;
 		static std::mutex m_Mutex;
 		static inline MemoryPool* s_pInstance = nullptr;
 
@@ -306,5 +314,6 @@ namespace st::memory
 	using MemoryPoolSingleThreaded [[maybe_unused]] = MemoryPool<false>;
 	using MemoryPoolMultiThreaded  [[maybe_unused]] = MemoryPool<true>;
 
+	template<bool isThreadSafe> std::thread::id MemoryPool<isThreadSafe>::s_InitThreadID;
 	template<bool isThreadSafe> std::mutex MemoryPool<isThreadSafe>::m_Mutex;
 }

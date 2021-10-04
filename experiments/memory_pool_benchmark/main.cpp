@@ -28,7 +28,7 @@ int main()
 
 	spdlog::info("---------- Single threaded benchmark ----------");
 
-	const int BenchmarkRuns = 20;
+	const int BenchmarkRuns = 3;
 
 	for (int i = 0; i < BenchmarkRuns; i++)
 	{

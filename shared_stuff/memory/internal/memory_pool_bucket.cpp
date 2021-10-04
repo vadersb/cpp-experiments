@@ -59,6 +59,9 @@ namespace st::memory
 			}
 		}
 
+		m_Pages.reserve(32);
+		m_Items.reserve(m_FirstPageItemsCount + m_ExtraPageItemsCount);
+
 		if (bucketDefinition.m_PreWarmFirstPage)
 		{
 			AddPage();
@@ -85,12 +88,12 @@ namespace st::memory
 	void MemoryPoolBucket::Deallocate(void* p)
 	{
 		//check that the address is within pages
-#ifdef DEBUG
+#ifdef MEMORY_POOL_CHECK_ADDRESS_BOUNDS
 		assert(CheckIfAddressIsWithinPages(p) == true);
 #endif
 
 		//check that the address is not already in m_Items
-#ifdef DEBUG
+#ifdef MEMORY_POOL_CHECK_ADDRESS_BOUNDS
 		auto searchResult = std::find(std::begin(m_Items), std::end(m_Items), p);
 		assert(searchResult == std::end(m_Items));
 #endif
