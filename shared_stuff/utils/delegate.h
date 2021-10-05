@@ -146,7 +146,7 @@ namespace st::utils
 
 
 
-		class DelegateCaller : public st::memory::Poolable
+		class DelegateCaller : public st::memory::Poolable<true>
 		{
 		public:
 

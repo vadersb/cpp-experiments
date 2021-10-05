@@ -1,6 +1,7 @@
 add_library(shared_stuff STATIC
         test/test_func.h
         test/test_func.cpp
+        memory/memory_settings.h
         memory/memory_pool.h
         memory/internal/memory_pool_bucket.cpp
         memory/internal/memory_pool_bucket.h
@@ -12,7 +13,9 @@ add_library(shared_stuff STATIC
         memory/memory_allocator.h
         memory/memory_wptr.h
         utils/utils_cast.h
-        utils/delegate.h memory/internal/memory_pool_settings.cpp)
+        utils/delegate.h
+        memory/internal/memory_pool_settings.cpp
+        )
 
 target_link_libraries(shared_stuff spdlog)
 target_include_directories(shared_stuff PUBLIC test memory utils)

@@ -7,6 +7,19 @@
 #include "memory_rcptr.h"
 #include "utils_cast.h"
 
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+
+#define WPTR_THREAD_STORE m_ThreadID = std::this_thread::get_id()
+#define WPTR_THREAD_CHECK assert( m_ThreadID == std::this_thread::get_id() )
+
+#else
+
+#define WPTR_THREAD_STORE ((void)0)
+#define WPTR_THREAD_CHECK ((void)0)
+
+#endif
+
 namespace st::memory
 {
 	template<typename T> class rcptr;
@@ -26,7 +39,7 @@ namespace st::memory
 		//default
 		wptr() : m_Pointer(nullptr)
 		{
-
+			WPTR_THREAD_STORE;
 		}
 
 		//naked pointers
@@ -38,6 +51,12 @@ namespace st::memory
 		//wptr
 		wptr(const wptr& pointerToCopyFrom)
 		{
+			WPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToCopyFrom.m_ThreadID );
+#endif
+
 			if (pointerToCopyFrom.m_Pointer == nullptr || pointerToCopyFrom.m_Pointer->IsOutOfScope())
 			{
 				m_Pointer = nullptr;
@@ -51,6 +70,12 @@ namespace st::memory
 
 		template<typename U> explicit wptr(const wptr<U>& pointerToCopyFrom)
 		{
+			WPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToCopyFrom.m_ThreadID );
+#endif
+
 			if (pointerToCopyFrom.m_Pointer == nullptr || pointerToCopyFrom.m_Pointer->IsOutOfScope())
 			{
 				m_Pointer = nullptr;
@@ -65,12 +90,24 @@ namespace st::memory
 		//rcptr
 		explicit wptr(const rcptr<T>& strongPointer) : m_Pointer(strongPointer.m_Pointer)
 		{
+			WPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == strongPointer.m_ThreadID );
+#endif
+
 			IncreaseRefCount();
 		}
 
 
 		template<typename U> explicit wptr(const rcptr<U>& strongPointer)
 		{
+			WPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == strongPointer.m_ThreadID );
+#endif
+
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(strongPointer.m_Pointer);
 
 			IncreaseRefCount();
@@ -82,11 +119,23 @@ namespace st::memory
 		//wptr
 		wptr(wptr&& pointerToMoveFrom) noexcept : m_Pointer(pointerToMoveFrom.m_Pointer)
 		{
+			WPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToMoveFrom.m_ThreadID );
+#endif
+
 			pointerToMoveFrom.m_Pointer = nullptr;
 		}
 
 		template<typename U> explicit wptr(wptr<U>&& pointerToMoveFrom) noexcept
 		{
+			WPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToMoveFrom.m_ThreadID );
+#endif
+
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(pointerToMoveFrom.m_Pointer);
 			pointerToMoveFrom.m_Pointer = nullptr;
 		}
@@ -96,6 +145,7 @@ namespace st::memory
 		//DESTRUCTOR
 		~wptr()
 		{
+			WPTR_THREAD_CHECK;
 			DecreaseRefCountAndReset();
 		}
 
@@ -104,8 +154,14 @@ namespace st::memory
 		//wptr
 		wptr& operator=(const wptr& otherPtr)
 		{
+			WPTR_THREAD_CHECK;
+
 			if (this == &otherPtr) return *this;
 			if (m_Pointer == otherPtr.m_Pointer) return *this;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == otherPtr.m_ThreadID );
+#endif
 
 			DecreaseRefCountAndReset();
 			m_Pointer = otherPtr.m_Pointer;
@@ -116,8 +172,14 @@ namespace st::memory
 
 		template<typename U> wptr<T>& operator=(const wptr<U>& otherPtr)
 		{
+			WPTR_THREAD_CHECK;
+
 			if (this == &otherPtr) return *this;
 			if (m_Pointer == otherPtr.m_Pointer) return *this;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == otherPtr.m_ThreadID );
+#endif
 
 			DecreaseRefCountAndReset();
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(otherPtr.m_Pointer);
@@ -129,7 +191,13 @@ namespace st::memory
 		//rcptr
 		wptr& operator=(const rcptr<T>& strongPointer)
 		{
+			WPTR_THREAD_CHECK;
+
 			if (m_Pointer == strongPointer.m_Pointer) return *this;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == strongPointer.m_ThreadID );
+#endif
 
 			DecreaseRefCountAndReset();
 			m_Pointer = strongPointer.m_Pointer;
@@ -140,7 +208,13 @@ namespace st::memory
 
 		template<typename U> wptr& operator=(const rcptr<U>& strongPointer)
 		{
+			WPTR_THREAD_CHECK;
+
 			if (m_Pointer == strongPointer.m_Pointer) return *this;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == strongPointer.m_ThreadID );
+#endif
 
 			DecreaseRefCountAndReset();
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(strongPointer.m_Pointer);
@@ -153,11 +227,17 @@ namespace st::memory
 		//MOVE ASSIGNMENT
 		wptr& operator=(wptr&& pointerToMoveFrom) noexcept
  		{
+		    WPTR_THREAD_CHECK;
+
 			if (this == &pointerToMoveFrom)
 			{
 				DecreaseRefCountAndReset();
 				return *this;
 			}
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+		    assert( m_ThreadID == pointerToMoveFrom.m_ThreadID );
+#endif
 
 			if (m_Pointer == pointerToMoveFrom.m_Pointer)
 			{
@@ -175,11 +255,17 @@ namespace st::memory
 
 		template<typename U> wptr& operator=(wptr<U>&& pointerToMoveFrom) noexcept
 		{
+			WPTR_THREAD_CHECK;
+
 			if (this == *pointerToMoveFrom)
 			{
 				DecreaseRefCountAndReset();
 				return *this;
 			}
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToMoveFrom.m_ThreadID );
+#endif
 
 			if (m_Pointer == pointerToMoveFrom.m_Pointer)
 			{
@@ -200,6 +286,7 @@ namespace st::memory
 		//returns true if contains valid pointer
 		bool Refresh()
 		{
+			WPTR_THREAD_CHECK;
 			ResetIfExpired();
 			return ContainsValidPointer();
 		}
@@ -207,12 +294,21 @@ namespace st::memory
 		//RESET
 		void Reset()
 		{
+			WPTR_THREAD_CHECK;
 			DecreaseRefCountAndReset();
 		}
 
 		//SWAP
 		void Swap(wptr& pointerToSwapWith)
 		{
+			//todo check if calls with itself
+
+			WPTR_THREAD_CHECK;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToSwapWith.m_ThreadID );
+#endif
+
 			ResetIfExpired();
 			pointerToSwapWith.ResetIfExpired();
 			std::swap(m_Pointer, pointerToSwapWith.m_Pointer);
@@ -221,6 +317,8 @@ namespace st::memory
 		//LOCK
 		[[nodiscard]] rcptr<T> Lock() const noexcept
 		{
+			WPTR_THREAD_CHECK;
+
 			if (ContainsValidPointer())
 			{
 				return rcptr<T>(*this);
@@ -233,6 +331,8 @@ namespace st::memory
 
 		template<typename U> rcptr<U> Lock() const noexcept
 		{
+			WPTR_THREAD_CHECK;
+
 			if (ContainsValidPointer())
 			{
 				return rcptr<U>(*this);
@@ -246,22 +346,44 @@ namespace st::memory
 		//COMPARISON
 		bool operator==(const wptr& ptrToCompareWith) const
 		{
+			WPTR_THREAD_CHECK;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == ptrToCompareWith.m_ThreadID );
+#endif
+
 			return m_Pointer == ptrToCompareWith.m_Pointer;
 		}
 
 		template<typename U> bool operator==(const wptr<U>& ptrToCompareWith) const
 		{
+			WPTR_THREAD_CHECK;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == ptrToCompareWith.m_ThreadID );
+#endif
+
+
 			return m_Pointer == ptrToCompareWith.m_Pointer;
 		}
 
 		template<typename U> bool operator==(const rcptr<U>& ptrToCompareWith) const
 		{
+			WPTR_THREAD_CHECK;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == ptrToCompareWith.m_ThreadID );
+#endif
+
+
 			return m_Pointer == ptrToCompareWith.m_Pointer;
 		}
 
 		//QUERIES
 		[[nodiscard]] bool ContainsValidPointer() const
 		{
+			WPTR_THREAD_CHECK;
+
 			if (m_Pointer == nullptr)
 			{
 				return false;
@@ -274,11 +396,14 @@ namespace st::memory
 
 		explicit operator bool() const noexcept
 		{
+			WPTR_THREAD_CHECK;
 			return ContainsValidPointer();
 		}
 
 		[[nodiscard]] int GetUseCount() const
 		{
+			WPTR_THREAD_CHECK;
+
 			if (m_Pointer != nullptr)
 			{
 				return m_Pointer->GetReferenceCount();
@@ -291,6 +416,8 @@ namespace st::memory
 
 		[[nodiscard]] int GetWeakReferenceCount() const
 		{
+			WPTR_THREAD_CHECK;
+
 			if (m_Pointer != nullptr)
 			{
 				return m_Pointer->GetWeakReferenceCount();
@@ -303,6 +430,8 @@ namespace st::memory
 
 		[[nodiscard]] bool IsExpired() const
 		{
+			WPTR_THREAD_CHECK;
+
 			return GetUseCount() == 0;
 		}
 
@@ -342,8 +471,15 @@ namespace st::memory
 
 		T* m_Pointer;
 
+#ifdef SMARTPTR_THREAD_VALIDATION
+		std::thread::id m_ThreadID;
+#endif
+
 	};
 
 
-
 }
+
+
+#undef WPTR_THREAD_STORE
+#undef WPTR_THREAD_CHECK

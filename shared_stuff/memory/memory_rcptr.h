@@ -4,11 +4,23 @@
 
 #pragma once
 
+#include "memory_settings.h"
 #include "memory_reference_counted.h"
 #include "memory_wptr.h"
 #include "utils_cast.h"
 
-#define RCPTR_THREAD_VALIDATION
+#ifdef SMARTPTR_THREAD_VALIDATION
+
+#define RCPTR_THREAD_STORE m_ThreadID = std::this_thread::get_id()
+#define RCPTR_THREAD_CHECK assert( m_ThreadID == std::this_thread::get_id() )
+
+#else
+
+#define RCPTR_THREAD_STORE ((void)0)
+#define RCPTR_THREAD_CHECK ((void)0)
+
+#endif
+
 
 
 namespace st::memory
@@ -35,7 +47,7 @@ namespace st::memory
 		//CONSTRUCTORS
 		rcptr() : m_Pointer(nullptr)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
 		}
 
 
@@ -44,13 +56,23 @@ namespace st::memory
 		//rcptr
 		rcptr(const rcptr& anotherPointer) : m_Pointer(anotherPointer.m_Pointer)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == anotherPointer.m_ThreadID);
+#endif
+
 			IncreaseRefCount();
 		}
 
 		template<typename U> explicit rcptr(const rcptr<U>& anotherPointer)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == anotherPointer.m_ThreadID);
+#endif
+
 			m_Pointer = st::utils::CheckedDynamicCastUpDown(anotherPointer.m_Pointer);
 
 			IncreaseRefCount();
@@ -59,7 +81,12 @@ namespace st::memory
 		//wptr
 		explicit rcptr(const wptr<T>& weakPointer)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == weakPointer.m_ThreadID);
+#endif
+
 			if (weakPointer.m_Pointer == nullptr || weakPointer.m_Pointer->IsOutOfScope())
 			{
 				m_Pointer = nullptr;
@@ -75,7 +102,12 @@ namespace st::memory
 
 		template<typename U> explicit rcptr(const wptr<U>& weakPointer)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == weakPointer.m_ThreadID);
+#endif
+
 			if (weakPointer.m_Pointer == nullptr || weakPointer.m_Pointer->IsOutOfScope())
 			{
 				m_Pointer = nullptr;
@@ -94,13 +126,23 @@ namespace st::memory
 		//rcptr
 		rcptr(rcptr&& pointerToMoveFrom)  noexcept : m_Pointer(pointerToMoveFrom.m_Pointer)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToMoveFrom.m_ThreadID);
+#endif
+
 			pointerToMoveFrom.m_Pointer = nullptr;
 		}
 
 		template<typename U> explicit rcptr(rcptr<U>&& pointerToMoveFrom)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToMoveFrom.m_ThreadID);
+#endif
+
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(pointerToMoveFrom.m_Pointer);
 
 			pointerToMoveFrom.m_Pointer = nullptr;
@@ -110,16 +152,22 @@ namespace st::memory
 		//DESTRUCTOR
 		~rcptr()
 		{
+			RCPTR_THREAD_CHECK;
 			DecreaseRefCountAndReset();
 		}
 
 		//COPY ASSIGNMENT
 		rcptr& operator=(const rcptr& otherRCPtr)
 		{
-			if (this == &otherRCPtr) return *this;
-			if (m_Pointer == otherRCPtr.m_Pointer) return *this;
+			RCPTR_THREAD_CHECK;
 
-			ThreadCheckAgainst(otherRCPtr);
+			if (this == &otherRCPtr) return *this;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == otherRCPtr.m_ThreadID);
+#endif
+
+			if (m_Pointer == otherRCPtr.m_Pointer) return *this;
 
 			DecreaseRefCountAndReset();
 			m_Pointer = otherRCPtr.m_Pointer;
@@ -131,7 +179,14 @@ namespace st::memory
 
 		template<typename U> rcptr<T>& operator=(const rcptr<U>& otherRCPtr)
 		{
+			RCPTR_THREAD_CHECK;
+
 			if (this == (rcptr<T>*)&otherRCPtr) return *this;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == otherRCPtr.m_ThreadID);
+#endif
+
 			if (m_Pointer == otherRCPtr.m_Pointer) return *this;
 
 			DecreaseRefCountAndReset();
@@ -145,11 +200,17 @@ namespace st::memory
 		//MOVE ASSIGNMENT
 		rcptr& operator=(rcptr&& ptrToMoveFrom) noexcept
 		{
+			RCPTR_THREAD_CHECK;
+
 			if (this == &ptrToMoveFrom)
 			{
 				DecreaseRefCountAndReset();
 				return *this;
 			}
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == ptrToMoveFrom.m_ThreadID);
+#endif
 
 			if (m_Pointer == ptrToMoveFrom.m_Pointer)
 			{
@@ -167,11 +228,17 @@ namespace st::memory
 
 		template<typename U> rcptr& operator=(rcptr<U>&& ptrToMoveFrom)
 		{
+			RCPTR_THREAD_CHECK;
+
 			if (this == *ptrToMoveFrom)
 			{
 				DecreaseRefCountAndReset();
 				return *this;
 			}
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == ptrToMoveFrom.m_ThreadID);
+#endif
 
 			if (m_Pointer == ptrToMoveFrom.m_Pointer)
 			{
@@ -190,22 +257,42 @@ namespace st::memory
 		//CONVERSION
 		template<typename U> explicit operator rcptr<U>() const
 		{
+			RCPTR_THREAD_CHECK;
+
 			return rcptr<U>(*this);
 		}
 
 		//COMPARISON
 		bool operator==(const rcptr& ptrToCompareWith) const
 		{
+			RCPTR_THREAD_CHECK;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == ptrToCompareWith.m_ThreadID);
+#endif
+
 			return m_Pointer == ptrToCompareWith.m_Pointer;
 		}
 
 		template<typename U> bool operator==(const rcptr<U>& ptrToCompareWith) const
 		{
+			RCPTR_THREAD_CHECK;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == ptrToCompareWith.m_ThreadID);
+#endif
+
 			return m_Pointer == ptrToCompareWith.m_Pointer;
 		}
 
 		template<typename U> bool operator==(const wptr<U>& ptrToCompareWith) const
 		{
+			RCPTR_THREAD_CHECK;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == ptrToCompareWith.m_ThreadID);
+#endif
+
 			return m_Pointer == ptrToCompareWith.m_Pointer;
 		}
 
@@ -213,40 +300,48 @@ namespace st::memory
 		//RESET
 		void Reset()
 		{
+			RCPTR_THREAD_CHECK;
+
 			DecreaseRefCountAndReset();
 		}
 
 		//SWAP
 		void Swap(rcptr& pointerToSwapWith)
 		{
+			RCPTR_THREAD_CHECK;
+
+#ifdef SMARTPTR_THREAD_VALIDATION
+			assert( m_ThreadID == pointerToSwapWith.m_ThreadID);
+#endif
+
 			std::swap(m_Pointer, pointerToSwapWith.m_Pointer);
 		}
 
 		//POINTER ACCESS
 		inline T* operator ->() const noexcept
 		{
-			ThreadCheck();
+			RCPTR_THREAD_CHECK;
 			assert(m_Pointer != nullptr);
 			return m_Pointer;
 		}
 
 		inline T& operator *() const noexcept
 		{
-			ThreadCheck();
+			RCPTR_THREAD_CHECK;
 			assert(m_Pointer != nullptr);
 			return *m_Pointer;
 		}
 
 		inline T* Get() const noexcept
 		{
-			ThreadCheck();
+			RCPTR_THREAD_CHECK;
 			assert(m_Pointer != nullptr);
 			return m_Pointer;
 		}
 
 		template<typename U> U* Get() const
 		{
-			ThreadCheck();
+			RCPTR_THREAD_CHECK;
 			U* pResult = st::utils::CheckedDynamicCastUpDown<T, U>(m_Pointer);
 			assert(pResult != nullptr);
 			return pResult;
@@ -255,17 +350,19 @@ namespace st::memory
 		//QUERIES
 		[[nodiscard]] bool ContainsValidPointer() const
 		{
+			RCPTR_THREAD_CHECK;
 			return m_Pointer != nullptr;
 		}
 
 		explicit operator bool() const noexcept
 		{
+			RCPTR_THREAD_CHECK;
 			return m_Pointer != nullptr;
 		}
 
 		[[nodiscard]] int GetUseCount() const
 		{
-			ThreadCheck();
+			RCPTR_THREAD_CHECK;
 			if (m_Pointer != nullptr)
 			{
 				return m_Pointer->GetReferenceCount();
@@ -281,7 +378,7 @@ namespace st::memory
 		//CONSTRUCTORS
 		explicit rcptr(T* p, bool isJustCreated) : m_Pointer(p)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
 			if (isJustCreated == false)
 			{
 				IncreaseRefCount();
@@ -297,7 +394,7 @@ namespace st::memory
 
 		template<typename U> explicit rcptr(U* ptr, bool isJustCreated)
 		{
-			ThreadStore();
+			RCPTR_THREAD_STORE;
 			m_Pointer = st::utils::CheckedDynamicCastUpDown<U, T>(ptr);
 
 			if (isJustCreated == false)
@@ -333,17 +430,8 @@ namespace st::memory
 
 		T* m_Pointer;
 
-#ifdef RCPTR_THREAD_VALIDATION
+#ifdef SMARTPTR_THREAD_VALIDATION
 		std::thread::id m_ThreadID;
-
-		inline void ThreadStore() {m_ThreadID = std::this_thread::get_id();}
-		inline void ThreadCheck() const { assert( m_ThreadID == std::this_thread::get_id() ); }
-		template<typename U> inline void ThreadCheckAgainst(const rcptr<U>& otherRCPtr) const {assert( m_ThreadID == otherRCPtr.m_ThreadID ); }
-
-#else
-		inline void ThreadStore() {}
-		inline void ThreadCheck() {}
-		template<typename U> inline void ThreadCheckAgainst(const rcptr<U>& otherRCPtr) {}
 #endif
 
 	};
@@ -382,3 +470,7 @@ namespace st::memory
 		return rcptr<TPointerType>(pRefCountedObject, false);
 	}
 }
+
+
+#undef RCPTR_THREAD_STORE
+#undef RCPTR_THREAD_CHECK

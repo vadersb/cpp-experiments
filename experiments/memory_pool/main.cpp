@@ -172,6 +172,7 @@ void PoolableItemTests();
 void MassiveNumberOfItemsTests();
 void RefCountedTests();
 void AllocatorTests();
+void SmartPointerThreadViolationTest();
 
 int main()
 {
@@ -185,6 +186,8 @@ int main()
 	MassiveNumberOfItemsTests();
 	RefCountedTests();
 	AllocatorTests();
+
+	SmartPointerThreadViolationTest();
 
 	//cleanup
 	st::memory::MemoryPoolMultiThreaded::Release();
@@ -374,6 +377,7 @@ void PrintString(const std::string& stringToPrint);
 void PrintString(std::string_view stringToPrint);
 //template<typename TChar, typename TAllocator> void PrintString(std::basic_string<TChar, std::char_traits<TChar>, TAllocator> stringToPrint);
 
+
 void AllocatorTests()
 {
 	std::vector<int, st::memory::AllocatorSingleThreaded<int>> testVector;
@@ -425,3 +429,21 @@ void PrintString(const std::string_view stringToPrint)
 //{
 //	std::cout << "string: " << stringToPrint << std::endl;
 //}
+
+
+template<typename T> void CheckIfPointerIsValid(const st::memory::rcptr<T>& ptrToCheck)
+{
+	if (ptrToCheck.ContainsValidPointer() == false)
+	{
+		std::cout << "pointer is not valid! \n";
+	}
+}
+
+void SmartPointerThreadViolationTest()
+{
+	auto ptr = st::memory::CreateRefCountedPointer<RefCountedTestItem, DerivedRefCountedItem>(123, 456.789f);
+
+	std::thread thread(CheckIfPointerIsValid<RefCountedTestItem>, ptr);
+
+	thread.join();
+}

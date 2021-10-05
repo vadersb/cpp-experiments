@@ -10,14 +10,16 @@
 int main()
 {
 	//init
-	st::memory::MemoryPoolInit(true);
+	st::memory::MemoryPoolSingleThreaded::Init();
+	st::memory::MemoryPoolMultiThreaded::Init();
 
 	DelegateTypesTest();
 	DelegatePoolableDebugTest();
 	DelegateEqualityTest();
 
 	//cleanup
-	st::memory::MemoryPoolRelease();
+	st::memory::MemoryPoolMultiThreaded::Release();
+	st::memory::MemoryPoolSingleThreaded::Release();
 
 	return 0;
 }
