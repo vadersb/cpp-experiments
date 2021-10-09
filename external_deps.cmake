@@ -8,6 +8,18 @@ endif()
 add_subdirectory(${SPDLOG_DIR} "spdlog")
 
 
+# mimalloc 2.0.2 or later
+if (DEFINED MIMALLOC_DIR)
+
+    add_subdirectory(${MIMALLOC_DIR} "mimalloc")
+    add_compile_definitions(USELIB_MIMALLOC)
+
+else()
+
+    message(STATUS "Define MIMALLOC_DIR to utilize mimalloc lib")
+
+endif()
+
 
 # raylib 3.7.0 or later
 # RAYLIB_DIR to be specified

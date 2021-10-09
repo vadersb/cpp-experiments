@@ -7,6 +7,11 @@
 #include "memory_pool.h"
 #include "spdlog/spdlog.h"
 
+#ifdef USELIB_MIMALLOC
+#include "mimalloc.h"
+#endif
+
+
 void BenchmarkRun(int runNumber);
 void MultithreadedBenchmarkRun(int runNumber);
 void SimpleTemplateTest();
@@ -15,7 +20,8 @@ enum class AllocType
 {
 	Std,
 	PoolSingleThreaded,
-	PoolMultiThreaded
+	PoolMultiThreaded,
+	MS_mimalloc
 };
 
 
@@ -71,16 +77,27 @@ template<typename T, AllocType allocType> T* Allocate()
 	{
 		return new T();
 	}
-	else
+
+	if constexpr(allocType == AllocType::PoolSingleThreaded)
 	{
-		if constexpr(allocType == AllocType::PoolSingleThreaded)
-		{
-			return st::memory::MemoryPoolSingleThreaded::Allocate<T>();
-		}
-		else
-		{
-			return st::memory::MemoryPoolMultiThreaded::Allocate<T>();
-		}
+		return st::memory::MemoryPoolSingleThreaded::Allocate<T>();
+	}
+
+	if constexpr(allocType == AllocType::PoolMultiThreaded)
+	{
+		return st::memory::MemoryPoolMultiThreaded::Allocate<T>();
+	}
+
+#ifdef USELIB_MIMALLOC
+	if constexpr(allocType == AllocType::MS_mimalloc)
+	{
+		return static_cast<T*>(mi_malloc(sizeof(T)));
+	}
+#endif
+
+	{
+		spdlog::error("Invalid allocation type: {}", allocType);
+		return new T();
 	}
 }
 
@@ -90,17 +107,32 @@ template<typename T, AllocType allocType> void Deallocate(T* p)
 	if constexpr(allocType == AllocType::Std)
 	{
 		delete p;
+		return;
 	}
-	else
+
+	if constexpr(allocType == AllocType::PoolSingleThreaded)
 	{
-		if constexpr(allocType == AllocType::PoolSingleThreaded)
-		{
-			st::memory::MemoryPoolSingleThreaded::Deallocate(p, sizeof(T));
-		}
-		else
-		{
-			st::memory::MemoryPoolMultiThreaded::Deallocate(p, sizeof(T));
-		}
+		st::memory::MemoryPoolSingleThreaded::Deallocate(p, sizeof(T));
+		return;
+	}
+
+	if constexpr(allocType == AllocType::PoolMultiThreaded)
+	{
+		st::memory::MemoryPoolMultiThreaded::Deallocate(p, sizeof(T));
+		return;
+	}
+
+#ifdef USELIB_MIMALLOC
+	if constexpr(allocType == AllocType::MS_mimalloc)
+	{
+		mi_free(p);
+		return;
+	}
+#endif
+
+	{
+		spdlog::error("Invalid allocation type: {}", allocType);
+		delete p;
 	}
 }
 
@@ -242,6 +274,16 @@ void BenchmarkRun(int runNumber)
 		spdlog::info("   memory pool MT time: {}", GetDurationInMicroseconds(timeStart, timeEnd));
 	}
 
+#ifdef USELIB_MIMALLOC
+	//mimalloc
+	{
+		auto timeStart = std::chrono::high_resolution_clock::now();
+		Benchmark<AllocType::MS_mimalloc>(BenchmarkIterationsCount);
+		auto timeEnd = std::chrono::high_resolution_clock::now();
+		spdlog::info("      MS mimalloc time: {}", GetDurationInMicroseconds(timeStart, timeEnd));
+	}
+#endif
+
 	spdlog::info(" ");
 
 }
@@ -297,6 +339,29 @@ void MultithreadedBenchmarkRun(int runNumber)
 	}
 
 	threads.clear();
+
+#ifdef USELIB_MIMALLOC
+	//mimalloc
+	{
+		auto timeStart = std::chrono::high_resolution_clock::now();
+
+		for (int i = 0; i < threadsCount; i++)
+		{
+			threads.emplace_back(Benchmark<AllocType::MS_mimalloc>, BenchmarkIterationsCount);
+		}
+
+		for (int i = 0; i < threadsCount; i++)
+		{
+			threads[i].join();
+		}
+
+		auto timeEnd = std::chrono::high_resolution_clock::now();
+		spdlog::info("      MS mimalloc time: {}", GetDurationInMicroseconds(timeStart, timeEnd));
+	}
+
+	threads.clear();
+
+#endif
 
 }
 

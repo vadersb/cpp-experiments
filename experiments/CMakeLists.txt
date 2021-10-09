@@ -21,7 +21,12 @@ target_link_libraries(memory_pool shared_stuff)
 
 #memory pool benchmark
 add_executable(memory_pool_benchmark memory_pool_benchmark/main.cpp memory_pool_benchmark/main.h)
-target_link_libraries(memory_pool_benchmark shared_stuff)
+target_link_libraries(memory_pool_benchmark PRIVATE shared_stuff)
+
+if (DEFINED MIMALLOC_DIR)
+    target_link_libraries(memory_pool_benchmark PRIVATE mimalloc-static)
+endif()
+
 
 #delegate
 add_executable(delegate delegate/main.cpp delegate/delegate_types.h delegate/delegate_types.cpp)
