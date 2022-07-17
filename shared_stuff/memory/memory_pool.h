@@ -9,6 +9,7 @@
 #include <mutex>
 #include <cassert>
 #include <map>
+#include <thread>
 #include "internal/memory_pool_bucket.h"
 #include "spdlog/spdlog.h"
 

@@ -53,3 +53,15 @@ else()
 
 endif()
 
+
+#enkiTS
+if (DEFINED ENKITS_DIR)
+
+    add_subdirectory(${ENKITS_DIR} "enkiTS")
+    add_compile_definitions(USELIB_ENKITS)
+
+else()
+
+    message(STATUS "Define ENKITS_DIR to build experiments that utilize enkiTS threading/tasks library")
+
+endif()

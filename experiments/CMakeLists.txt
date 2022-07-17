@@ -33,11 +33,14 @@ add_executable(delegate delegate/main.cpp delegate/delegate_types.h delegate/del
 target_link_libraries(delegate shared_stuff)
 
 
-
+#------------------------------------------------
 #threading tasks
-add_executable(threading_tasks threading_tasks/main.cpp)
-target_link_libraries(threading_tasks shared_stuff)
-
+add_executable(threading_tasks threading_tasks/main.cpp threading_tasks/main.h )
+target_link_libraries(threading_tasks PRIVATE shared_stuff )
+if (DEFINED ENKITS_DIR)
+    target_link_libraries(threading_tasks PRIVATE enkiTS )
+    target_sources(threading_tasks PRIVATE threading_tasks/tasks_enkits.cpp )
+endif()
 
 
 #threading std

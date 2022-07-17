@@ -3,7 +3,7 @@
 //
 
 #define SOKOL_IMPL
-#define SOKOL_D3D11
+#define SOKOL_GLCORE33
 
 #include "main.h"
 
