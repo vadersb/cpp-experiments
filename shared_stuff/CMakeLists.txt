@@ -15,7 +15,7 @@ add_library(shared_stuff STATIC
         utils/utils_cast.h
         utils/delegate.h
         memory/internal/memory_pool_settings.cpp
-        )
+        memory/memory_tptr.h)
 
 target_link_libraries(shared_stuff spdlog)
 target_include_directories(shared_stuff PUBLIC test memory utils)

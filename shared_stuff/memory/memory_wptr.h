@@ -5,6 +5,7 @@
 #pragma once
 
 #include "memory_rcptr.h"
+#include "memory_tptr.h"
 #include "utils_cast.h"
 
 
@@ -341,6 +342,30 @@ namespace st::memory
 			{
 				return rcptr<U>();
 			}
+		}
+
+
+		//TEMP SCOPED POINTER/REFERENCE PASSING
+		tptr<T> PassPtr(bool canBeNull = true) const
+		{
+			return tptr<T>(m_Pointer, canBeNull);
+		}
+
+		template<typename U> tptr<U> PassPtr(bool canBeNull = true) const
+		{
+			U* pResult = st::utils::CheckedDynamicCastUpDown<T, U>(m_Pointer);
+			return tptr<U>(pResult, canBeNull);
+		}
+
+		tptr<T> PassRef() const
+		{
+			return tptr<T>(m_Pointer, false);
+		}
+
+		template<typename U> tptr<U> PassRef() const
+		{
+			U* pResult = st::utils::CheckedDynamicCastUpDown<T, U>(m_Pointer);
+			return tptr<U>(pResult, false);
 		}
 
 		//COMPARISON

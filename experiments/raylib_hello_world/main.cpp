@@ -33,7 +33,9 @@ int main()
 
 		ClearBackground(RAYWHITE);
 
-		DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+		DrawCircle(GetMouseX(), GetMouseY(), 32.f, RED);
+
+		DrawText("Congrats! You created your first window!", 190, 200, 20, DARKGRAY);
 
 		EndDrawing();
 		//----------------------------------------------------------------------------------

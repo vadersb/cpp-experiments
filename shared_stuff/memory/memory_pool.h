@@ -281,7 +281,7 @@ namespace st::memory
 		{
 			if (isThreadSafe)
 			{
-				spdlog::info("Memory Pool (Multithreaded) requests stats:");
+				spdlog::info("Memory Pool (Multi-threaded) requests stats:");
 			}
 			else
 			{
