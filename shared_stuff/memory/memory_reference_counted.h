@@ -16,6 +16,7 @@ namespace st::memory
 
 	template <typename T> friend class rcptr;
 	template <typename T> friend class wptr;
+	template <typename T> friend class tptr;
 
 	public:
 

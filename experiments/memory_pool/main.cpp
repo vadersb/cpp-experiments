@@ -173,6 +173,7 @@ void MassiveNumberOfItemsTests();
 void RefCountedTests();
 void AllocatorTests();
 void SmartPointerThreadViolationTest();
+void ReceiveDerivedItemReferenceAndPrint(const DerivedRefCountedItem& item);
 
 int main()
 {
@@ -187,7 +188,7 @@ int main()
 	RefCountedTests();
 	AllocatorTests();
 
-	SmartPointerThreadViolationTest();
+	//SmartPointerThreadViolationTest(); //uncomment for the test
 
 	//cleanup
 	st::memory::MemoryPoolMultiThreaded::Release();
@@ -308,6 +309,8 @@ void RefCountedTests()
 
 	std::cout <<"use count from weak pointer: " << weakPtr.GetUseCount() << std::endl;
 
+	ReceiveDerivedItemReferenceAndPrint(weakPtr.PassRef());
+
 	//copy
 	auto anotherWeekPtr(weakPtr);
 
@@ -376,6 +379,11 @@ void RefCountedTests()
 void PrintString(const std::string& stringToPrint);
 void PrintString(std::string_view stringToPrint);
 //template<typename TChar, typename TAllocator> void PrintString(std::basic_string<TChar, std::char_traits<TChar>, TAllocator> stringToPrint);
+
+void ReceiveDerivedItemReferenceAndPrint(const DerivedRefCountedItem& item)
+{
+	std::cout << "float value of passed pointer: " << item.GetFloatValue() << std::endl;
+}
 
 
 void AllocatorTests()
